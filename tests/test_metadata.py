@@ -8,6 +8,14 @@ import re
 from typing import Any
 
 import pytest
+import yaml
+
+from custom_components.smart_frame_engine import services
+from custom_components.smart_frame_engine.binary_sensor import BINARY_SENSORS
+from custom_components.smart_frame_engine.button import BUTTONS
+from custom_components.smart_frame_engine.image import CURRENT_IMAGE
+from custom_components.smart_frame_engine.sensor import REFRESH_RULE_SOURCES, SENSORS
+from custom_components.smart_frame_engine.switch import FAMILY_MODE
 
 ROOT = Path(__file__).parent.parent
 INTEGRATION = ROOT / "custom_components" / "smart_frame_engine"
@@ -91,10 +99,6 @@ def _english() -> dict[str, Any]:
 
 def test_services_yaml_matches_schemas_and_translations() -> None:
     """Every service/field in services.yaml has a schema key and an English name+description."""
-    import yaml
-
-    from custom_components.smart_frame_engine import services
-
     definitions = yaml.safe_load((INTEGRATION / "services.yaml").read_text(encoding="utf-8"))
     schemas = {
         services.SERVICE_SET_AMBIENT_CONTEXT: services.SET_AMBIENT_CONTEXT_SCHEMA,
@@ -117,8 +121,6 @@ def test_services_yaml_matches_schemas_and_translations() -> None:
 
 def test_select_selectors_are_translated() -> None:
     """Each translation_key used by a select selector lists exactly its options."""
-    import yaml
-
     definitions = yaml.safe_load((INTEGRATION / "services.yaml").read_text(encoding="utf-8"))
     selectors = _english()["selector"]
     seen = 0
@@ -135,12 +137,6 @@ def test_select_selectors_are_translated() -> None:
 
 def test_every_entity_has_a_translated_name() -> None:
     """Entity names come from translations: every translation_key must exist."""
-    from custom_components.smart_frame_engine.binary_sensor import BINARY_SENSORS
-    from custom_components.smart_frame_engine.button import BUTTONS
-    from custom_components.smart_frame_engine.image import CURRENT_IMAGE
-    from custom_components.smart_frame_engine.sensor import REFRESH_RULE_SOURCES, SENSORS
-    from custom_components.smart_frame_engine.switch import FAMILY_MODE
-
     entities = _english()["entity"]
     expected = {
         "binary_sensor": BINARY_SENSORS,

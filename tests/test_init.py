@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 
 import aiohttp
@@ -40,6 +41,20 @@ from .common import (
 
 def _issue(hass: HomeAssistant, entry_id: str) -> ir.IssueEntry | None:
     return ir.async_get(hass).async_get_issue(DOMAIN, f"incompatible_api_{entry_id}")
+
+
+async def _wait_for_state(
+    hass: HomeAssistant, entry: MockConfigEntry, state: ConfigEntryState
+) -> None:
+    """Wait (bounded) for a setup that starts from a timer.
+
+    The first load of a platform's dependencies (for instance ``http``) happens off the event
+    loop, so ``async_block_till_done`` alone can return while the setup is still running.
+    """
+    async with asyncio.timeout(10):
+        while entry.state is not state:
+            await hass.async_block_till_done()
+            await asyncio.sleep(0.01)
 
 
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
@@ -268,9 +283,8 @@ async def test_issue_cleared_when_setup_retry_succeeds(
     aioclient_mock.clear_requests()
     mock_engine(aioclient_mock)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=5))
-    await hass.async_block_till_done()
+    await _wait_for_state(hass, entry, ConfigEntryState.LOADED)
 
-    assert entry.state is ConfigEntryState.LOADED
     assert _issue(hass, entry.entry_id) is None
 
 
