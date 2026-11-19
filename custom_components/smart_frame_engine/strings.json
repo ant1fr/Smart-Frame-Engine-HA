@@ -74,6 +74,205 @@
       }
     }
   },
+  "entity": {
+    "binary_sensor": {
+      "engine_connected": {
+        "name": "Engine connected"
+      },
+      "frame_online": {
+        "name": "Frame online"
+      },
+      "frame_charging": {
+        "name": "Frame charging"
+      },
+      "delivery_pending": {
+        "name": "Image pending delivery"
+      },
+      "ephemeral_active": {
+        "name": "Temporary image"
+      },
+      "quiet_hours": {
+        "name": "Quiet hours"
+      }
+    },
+    "button": {
+      "force_refresh": {
+        "name": "Refresh image"
+      },
+      "wake_frame": {
+        "name": "Wake up frame"
+      }
+    },
+    "image": {
+      "current_image": {
+        "name": "Current image"
+      }
+    },
+    "sensor": {
+      "engine_version": {
+        "name": "Engine version"
+      },
+      "active_source": {
+        "name": "Image source"
+      },
+      "refresh_rule": {
+        "name": "Refresh mode",
+        "state": {
+          "pinned": "Pinned rule",
+          "smart_mix": "Smart Mix",
+          "last": "Last request"
+        }
+      },
+      "media_title": {
+        "name": "Media title"
+      },
+      "ambient_context": {
+        "name": "Ambient context"
+      },
+      "last_delivery": {
+        "name": "Last delivery"
+      },
+      "frame_last_seen": {
+        "name": "Frame last seen"
+      },
+      "frame_battery": {
+        "name": "Frame battery"
+      },
+      "frame_wifi_signal": {
+        "name": "Frame Wi-Fi signal"
+      }
+    },
+    "switch": {
+      "family_mode": {
+        "name": "Family Mode"
+      }
+    }
+  },
+  "services": {
+    "set_ambient_context": {
+      "name": "Set ambient context",
+      "description": "Tells the engine about the current situation (weather, who is home, season, boosts). Each field expires on its own. Fields you leave out keep their value; an empty text or list clears that field.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Engine",
+          "description": "The Smart Frame Engine to use. Optional when only one is set up."
+        },
+        "family_mode": {
+          "name": "Family Mode",
+          "description": "Temporarily forces Family Mode on or off."
+        },
+        "presence": {
+          "name": "People at home",
+          "description": "Immich people at home; their photos are favoured (up to 20)."
+        },
+        "weather": {
+          "name": "Weather",
+          "description": "A weather keyword known to the engine, for example rainy (up to 80 characters)."
+        },
+        "season": {
+          "name": "Season",
+          "description": "Replaces the calendar season."
+        },
+        "boost_tags": {
+          "name": "Boost tags",
+          "description": "Search phrases to favour, for example beach or birthday (up to 20)."
+        },
+        "boost_people": {
+          "name": "Boost people",
+          "description": "Immich people to favour (up to 20)."
+        },
+        "ttl_minutes": {
+          "name": "Lifetime",
+          "description": "How long the fields set by this call last, in minutes (1 to 10080). The engine's default applies when left empty."
+        }
+      }
+    },
+    "clear_ambient_context": {
+      "name": "Clear ambient context",
+      "description": "Clears the ambient context, or only one field of it.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Engine",
+          "description": "The Smart Frame Engine to use. Optional when only one is set up."
+        },
+        "field": {
+          "name": "Field",
+          "description": "Clear only this field. Leave empty to clear everything."
+        }
+      }
+    },
+    "send_title_card": {
+      "name": "Send title card",
+      "description": "Shows a text card (title, subtitle, caption) on the frame.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Engine",
+          "description": "The Smart Frame Engine to use. Optional when only one is set up."
+        },
+        "title": {
+          "name": "Title",
+          "description": "Large centered text (1 to 200 characters)."
+        },
+        "subtitle": {
+          "name": "Subtitle",
+          "description": "Smaller text below the title (up to 200 characters)."
+        },
+        "caption": {
+          "name": "Caption",
+          "description": "Small text at the bottom (up to 200 characters)."
+        },
+        "accent": {
+          "name": "Accent color",
+          "description": "Color of the rule under the title."
+        },
+        "ephemeral": {
+          "name": "Temporary",
+          "description": "When on, the previous image comes back afterwards."
+        },
+        "ttl_minutes": {
+          "name": "Duration",
+          "description": "Temporary cards only: minutes before the previous image returns (1 to 10080). The engine's default (60) applies when left empty."
+        },
+        "hold_minutes": {
+          "name": "Protect from refresh",
+          "description": "Minutes during which scheduled refreshes will not replace the card (1 to 10080)."
+        },
+        "push_to_fraimic": {
+          "name": "Send to frame",
+          "description": "Turn off to only render a preview without sending it to the frame."
+        }
+      }
+    }
+  },
+  "selector": {
+    "season": {
+      "options": {
+        "spring": "Spring",
+        "summer": "Summer",
+        "autumn": "Autumn",
+        "winter": "Winter"
+      }
+    },
+    "ambient_field": {
+      "options": {
+        "presence": "People at home",
+        "family_mode": "Family Mode",
+        "weather": "Weather",
+        "season": "Season",
+        "boost_tags": "Boost tags",
+        "boost_people": "Boost people"
+      }
+    },
+    "accent": {
+      "options": {
+        "red": "Red",
+        "yellow": "Yellow",
+        "blue": "Blue",
+        "green": "Green",
+        "white": "White"
+      }
+    }
+  },
   "issues": {
     "integration_outdated": {
       "title": "Smart Frame Engine integration needs an update",
@@ -99,6 +298,27 @@
     },
     "instance_mismatch": {
       "message": "The device at the configured address is not {name}. It is a different Smart Frame Engine."
+    },
+    "action_failed": {
+      "message": "The Smart Frame Engine could not do that: {error}"
+    },
+    "request_rejected": {
+      "message": "The Smart Frame Engine rejected the request: {error}"
+    },
+    "capability_not_supported": {
+      "message": "The Smart Frame Engine {name} does not support this feature ({capability}). Update the engine to use it."
+    },
+    "no_context_fields": {
+      "message": "Give at least one ambient context field to set (family mode, presence, weather, season, boost tags or boost people)."
+    },
+    "config_entry_required": {
+      "message": "Several Smart Frame Engines are set up. Choose which one to use."
+    },
+    "entry_not_found": {
+      "message": "No Smart Frame Engine with the ID {entry_id} was found."
+    },
+    "no_engine_loaded": {
+      "message": "The Smart Frame Engine is not loaded. Check that it is reachable and try again."
     }
   }
 }
