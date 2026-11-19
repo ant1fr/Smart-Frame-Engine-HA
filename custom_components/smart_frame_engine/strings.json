@@ -1,0 +1,104 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Connect to Smart Frame Engine",
+        "description": "Enter the address of your Smart Frame Engine. The API port is 8080 unless you changed it.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        },
+        "data_description": {
+          "host": "Hostname or IP address of the machine running Smart Frame Engine.",
+          "port": "Port of the Smart Frame Engine web server."
+        }
+      },
+      "auth": {
+        "title": "Authentication required",
+        "description": "This Smart Frame Engine requires an API key. You can find it in the engine's web interface.",
+        "data": {
+          "api_key": "API key"
+        },
+        "data_description": {
+          "api_key": "API key of the engine, sent as the X-API-Key header."
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Add {name}?",
+        "description": "Smart Frame Engine **{name}** was found at {host}:{port}. Do you want to add it to Home Assistant? If the engine requires an API key, enter it below.",
+        "data": {
+          "api_key": "API key"
+        },
+        "data_description": {
+          "api_key": "API key of the engine. Leave empty only if the engine does not require authentication."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate {name}",
+        "description": "The API key for **{name}** was rejected. Enter the current API key.",
+        "data": {
+          "api_key": "API key"
+        },
+        "data_description": {
+          "api_key": "The current API key of the engine."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Device is already configured",
+      "already_in_progress": "Configuration flow is already in progress",
+      "cannot_connect": "Failed to connect",
+      "reauth_successful": "Re-authentication was successful",
+      "integration_outdated": "This Smart Frame Engine is newer than this integration supports. Update the Smart Frame Engine integration (HACS) and try again.",
+      "server_outdated": "This Smart Frame Engine is too old for this integration. Update the engine and try again.",
+      "instance_id_missing": "This Smart Frame Engine does not report an instance ID. Update the engine to version 1.0.0-rc.2 or later and try again.",
+      "wrong_instance": "The device at this address is a different Smart Frame Engine than the one configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Smart Frame Engine options",
+        "data": {
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often Home Assistant asks the engine for its status (10 to 3600 seconds)."
+        }
+      }
+    }
+  },
+  "issues": {
+    "integration_outdated": {
+      "title": "Smart Frame Engine integration needs an update",
+      "description": "The engine **{name}** (version {server_version}) speaks API versions {min_api_version} to {api_version}, but this integration only supports version {supported_version}. The engine is newer than the integration.\n\nUpdate the Smart Frame Engine integration in HACS and restart Home Assistant. This issue disappears on its own once the versions are compatible."
+    },
+    "server_outdated": {
+      "title": "Smart Frame Engine needs an update",
+      "description": "The engine **{name}** (version {server_version}) speaks API versions {min_api_version} to {api_version}, but this integration needs version {supported_version}. The engine is older than the integration.\n\nUpdate Smart Frame Engine. This issue disappears on its own once the versions are compatible."
+    }
+  },
+  "exceptions": {
+    "invalid_auth": {
+      "message": "The Smart Frame Engine rejected the API key."
+    },
+    "update_failed": {
+      "message": "Error communicating with the Smart Frame Engine: {error}"
+    },
+    "incompatible_server": {
+      "message": "The Smart Frame Engine is too old: it speaks API versions {min_api_version} to {api_version} but this integration needs version {supported_version}. Update the engine."
+    },
+    "incompatible_integration": {
+      "message": "The Smart Frame Engine is newer than this integration: it speaks API versions {min_api_version} to {api_version} but this integration only supports version {supported_version}. Update the integration."
+    },
+    "instance_mismatch": {
+      "message": "The device at the configured address is not {name}. It is a different Smart Frame Engine."
+    }
+  }
+}

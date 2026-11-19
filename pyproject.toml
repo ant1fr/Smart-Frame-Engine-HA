@@ -1,0 +1,48 @@
+[project]
+name = "smart-frame-engine-ha"
+version = "1.0.0"
+description = "Home Assistant custom integration for Smart Frame Engine"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.13.2"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = [
+    "ASYNC",
+    "B",
+    "C4",
+    "E",
+    "F",
+    "I",
+    "PT",
+    "RUF",
+    "SIM",
+    "UP",
+    "W",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components"]
+force-sort-within-sections = true
+combine-as-imports = true
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+files = ["custom_components"]
+
+[[tool.mypy.overrides]]
+module = ["custom_components.*"]
+disallow_any_generics = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
