@@ -3,10 +3,10 @@
 ## Project Overview
 Official Home Assistant custom integration (`smart_frame_engine`) for **Smart Frame Engine** (`[https://github.com/ant1fr/Smart-Frame-Engine](https://github.com/ant1fr/Smart-Frame-Engine)`), installable via HACS (Home Assistant Community Store) and manual installation.
 
-- **Target Home Assistant Core:** 2026.x+ (Python 3.12+)
+- **Target Home Assistant Core:** 2026.1.0+ (Python 3.13.2+; CI and local tests run on Python 3.14, which latest HA and `pytest-homeassistant-custom-component` require)
 - **Integration Domain:** `smart_frame_engine`
 - **IoT Class:** `local_polling` (with Zeroconf mDNS discovery on `_smartframe._tcp.local.`)
-- **Supported Server Contract:** `SUPPORTED_API_VERSION = 1`
+- **Supported Server Contract:** `SUPPORTED_API_VERSION = 1` (contract v1.1: the engine's `instance_id` from `GET /api/health` / Zeroconf TXT is the config entry `unique_id` and the `DeviceInfo` identifier)
 - **Upstream API Contract (Single Source of Truth):**
   - Human-readable contract: `[https://github.com/ant1fr/Smart-Frame-Engine/blob/main/docs/API_CONTRACT.md](https://github.com/ant1fr/Smart-Frame-Engine/blob/main/docs/API_CONTRACT.md)`
   - Machine-readable OpenAPI schema: `[https://github.com/ant1fr/Smart-Frame-Engine/blob/main/docs/openapi.json](https://github.com/ant1fr/Smart-Frame-Engine/blob/main/docs/openapi.json)`
@@ -33,6 +33,7 @@ Official Home Assistant custom integration (`smart_frame_engine`) for **Smart Fr
 - `tests/` — `pytest` + `pytest-homeassistant-custom-component`
 - `hacs.json` — HACS metadata
 - `pyproject.toml` — `ruff`, `mypy`, `pytest` configuration
+- `requirements_test.txt` — test/lint dependencies (`pytest-homeassistant-custom-component`, `ruff`, `mypy`)
 
 ## Development, Quality & GitHub Rules (CRITICAL)
 
@@ -66,4 +67,4 @@ Official Home Assistant custom integration (`smart_frame_engine`) for **Smart Fr
 - `ruff check .`
 - `ruff format --check .`
 - `mypy custom_components`
-- `pytest`
+- `pytest` — HA's test plugin imports `fcntl`, so run it on Linux/macOS/WSL (not native Windows); `ruff` and `mypy` run anywhere
