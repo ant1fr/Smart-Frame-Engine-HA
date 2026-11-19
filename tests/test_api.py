@@ -301,9 +301,19 @@ async def test_status_parsing(hass: HomeAssistant, aioclient_mock: AiohttpClient
     assert status.ephemeral.active is False
     assert status.frame.configured is True
     assert status.frame.power_mode == "deepsleep"
-    assert status.frame.telemetry == {"battery": 80}
+    assert status.frame.telemetry.online is True
+    assert status.frame.telemetry.battery_percent == 80
+    assert status.frame.telemetry.charging is False
+    assert status.frame.telemetry.rssi == -61
+    assert status.frame.telemetry.firmware_version == "1.2.3"
+    assert status.frame.telemetry.last_seen is not None
+    assert status.scheduler.active_rule_kind == "immich"
+    assert status.scheduler.active_rule_source == "smart_mix"
     assert status.delivery.pending is False
-    assert status.delivery.last_delivered_at is not None
+    assert status.delivery.last_delivery is not None
+    assert status.delivery.last_delivery.delivered_at is not None
+    assert status.delivery.last_delivery.reason == "submit"
+    assert status.delivery.last_delivery.size_bytes == 1
     assert status.scheduler.enabled is True
     assert status.scheduler.last_run_status == "ok"
     assert status.scheduler.ambient.weather is not None

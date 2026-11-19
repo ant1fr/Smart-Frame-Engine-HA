@@ -19,6 +19,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.smart_frame_engine.const import (
     ALL_CAPABILITIES,
+    CAPABILITY_FORCE_REFRESH,
     CAPABILITY_TITLE_CARD,
     CONF_SCAN_INTERVAL,
     DOMAIN,
@@ -285,3 +286,41 @@ async def test_removing_entry_deletes_issue(
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert _issue(hass, entry.entry_id) is None
+
+
+# -- Capability changes ----------------------------------------------------------------
+
+
+async def test_capability_change_reloads_the_entry(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """An engine that gains or loses a capability gets its entities rebuilt."""
+    mock_engine(aioclient_mock)
+    entry = make_entry()
+    await _setup(hass, entry)
+    first: SmartFrameCoordinator = entry.runtime_data
+    assert CAPABILITY_FORCE_REFRESH in first.capabilities
+
+    aioclient_mock.clear_requests()
+    mock_engine(aioclient_mock, capabilities=ALL_CAPABILITIES - {CAPABILITY_FORCE_REFRESH})
+    await first.async_refresh()
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data is not first
+    assert CAPABILITY_FORCE_REFRESH not in entry.runtime_data.capabilities
+
+
+async def test_unchanged_capabilities_do_not_reload(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Normal polling never reloads the entry."""
+    mock_engine(aioclient_mock)
+    entry = make_entry()
+    await _setup(hass, entry)
+    first: SmartFrameCoordinator = entry.runtime_data
+
+    await first.async_refresh()
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data is first
