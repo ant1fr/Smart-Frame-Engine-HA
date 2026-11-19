@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 import enum
 import json
 from typing import Any, Final, Literal, TypeIs
@@ -128,9 +128,11 @@ def _dt(value: Any) -> datetime | None:
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(value)
+        parsed = datetime.fromisoformat(value)
     except ValueError:
         return None
+    # The contract says "date-time"; treat a missing offset as UTC so every value is aware.
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def _str_tuple(value: Any) -> tuple[str, ...]:
@@ -229,8 +231,16 @@ class CurrentImage:
     ephemeral: bool = False
     pushed: bool = True
     content_key: str | None = None
+    sha256: str | None = None
     processed_at: datetime | None = None
     expires_at: datetime | None = None
+    # Provider metadata (date, location, people...): free-form per the contract.
+    details: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def identity(self) -> tuple[str | None, datetime | None]:
+        """What changes when the displayed image changes (content hash + render time)."""
+        return (self.sha256, self.processed_at)
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> CurrentImage:
@@ -242,8 +252,10 @@ class CurrentImage:
             ephemeral=_bool(data.get("ephemeral")),
             pushed=_bool(data.get("pushed"), True),
             content_key=_str(data.get("content_key")),
+            sha256=_str(data.get("sha256")),
             processed_at=_dt(data.get("processed_at")),
             expires_at=_dt(data.get("expires_at")),
+            details=dict(_mapping(data.get("details"))),
         )
 
 
@@ -274,6 +286,38 @@ class EphemeralState:
 
 
 @dataclass(frozen=True, slots=True)
+class FrameTelemetry:
+    """Last known frame state (``FrameTelemetry``); updated whenever the frame is contacted."""
+
+    online: bool | None = None  # None = the frame was never contacted
+    last_seen: datetime | None = None
+    last_checked: datetime | None = None
+    last_error: str | None = None
+    battery_percent: float | None = None
+    charging: bool | None = None
+    firmware_version: str | None = None
+    rssi: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> FrameTelemetry:
+        """Parse ``FrameTelemetry`` (and its nested ``FrameInfo``) tolerantly."""
+        info = _mapping(data.get("info"))
+        online = data.get("online")
+        charging = info.get("charging")
+        rssi = info.get("rssi")
+        return cls(
+            online=online if isinstance(online, bool) else None,
+            last_seen=_dt(data.get("last_seen")),
+            last_checked=_dt(data.get("last_checked")),
+            last_error=_str(data.get("last_error")),
+            battery_percent=_float(info.get("battery_percent")),
+            charging=charging if isinstance(charging, bool) else None,
+            firmware_version=_str(info.get("firmware_version")),
+            rssi=rssi if _is_int(rssi) else None,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class FrameState:
     """Configured frame characteristics (``FrameStatus``)."""
 
@@ -282,7 +326,7 @@ class FrameState:
     panel_label: str | None = None
     orientation: str | None = None
     power_mode: str | None = None
-    telemetry: Mapping[str, Any] = field(default_factory=dict)
+    telemetry: FrameTelemetry = field(default_factory=FrameTelemetry)
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> FrameState:
@@ -293,7 +337,28 @@ class FrameState:
             panel_label=_str(data.get("panel_label")),
             orientation=_str(data.get("orientation")),
             power_mode=_str(data.get("power_mode")),
-            telemetry=dict(_mapping(data.get("telemetry"))),
+            telemetry=FrameTelemetry.from_dict(_mapping(data.get("telemetry"))),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class LastDelivery:
+    """The most recent successful upload to the frame (``LastDelivery``)."""
+
+    delivered_at: datetime | None = None
+    reason: str | None = None  # submit | force | wakeup | worker
+    duration_s: float | None = None
+    size_bytes: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> LastDelivery:
+        """Parse ``LastDelivery`` tolerantly."""
+        size = data.get("bytes")
+        return cls(
+            delivered_at=_dt(data.get("delivered_at")),
+            reason=_str(data.get("reason")),
+            duration_s=_float(data.get("duration_s")),
+            size_bytes=size if _is_int(size) else None,
         )
 
 
@@ -302,14 +367,15 @@ class DeliveryState:
     """Upload queue state (``DeliveryStatus``)."""
 
     pending: bool = False
-    last_delivered_at: datetime | None = None
+    last_delivery: LastDelivery | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> DeliveryState:
         """Parse ``DeliveryStatus`` tolerantly."""
+        last = data.get("last_delivery")
         return cls(
             pending=_bool(data.get("pending")),
-            last_delivered_at=_dt(_mapping(data.get("last_delivery")).get("delivered_at")),
+            last_delivery=LastDelivery.from_dict(last) if isinstance(last, Mapping) else None,
         )
 
 
@@ -393,12 +459,16 @@ class SchedulerState:
     hold_until: datetime | None = None
     last_run_status: str | None = None
     last_run_reason: str | None = None
+    # Which rule a refresh would replay: kind (immich, tmdb...) and source (pinned|smart_mix|last).
+    active_rule_kind: str | None = None
+    active_rule_source: str | None = None
     ambient: AmbientState = field(default_factory=AmbientState)
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> SchedulerState:
         """Parse ``SchedulerSnapshot`` tolerantly."""
         last_run = _mapping(data.get("last_run"))
+        rule = _mapping(data.get("active_rule"))
         return cls(
             enabled=_bool(data.get("enabled")),
             running=_bool(data.get("running")),
@@ -409,6 +479,8 @@ class SchedulerState:
             hold_until=_dt(data.get("hold_until")),
             last_run_status=_str(last_run.get("status")),
             last_run_reason=_str(last_run.get("reason")),
+            active_rule_kind=_str(rule.get("kind")),
+            active_rule_source=_str(rule.get("source")),
             ambient=AmbientState.from_dict(_mapping(data.get("ambient"))),
         )
 

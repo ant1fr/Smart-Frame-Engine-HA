@@ -9,28 +9,36 @@ as the versions are compatible again.
 from __future__ import annotations
 
 from collections.abc import Awaitable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    HomeAssistantError,
+    ServiceValidationError,
+)
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
     AmbientView,
+    ConfigView,
     EngineStatus,
     HealthInfo,
+    SmartFrameApiError,
     SmartFrameAuthError,
     SmartFrameClient,
     SmartFrameError,
+    SmartFrameValidationError,
     UpdateTarget,
 )
 from .const import (
     CAPABILITY_AMBIENT_CONTEXT,
+    CAPABILITY_FAMILY_MODE,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -55,6 +63,8 @@ class SmartFrameData:
     status: EngineStatus
     # ``None`` when the engine does not advertise the ``ambient_context`` capability.
     ambient: AmbientView | None
+    # ``None`` when the engine does not advertise the ``family_mode`` capability.
+    config: ConfigView | None = None
 
 
 SmartFrameConfigEntry = ConfigEntry["SmartFrameCoordinator"]
@@ -139,9 +149,63 @@ class SmartFrameCoordinator(DataUpdateCoordinator[SmartFrameData]):
         if CAPABILITY_AMBIENT_CONTEXT in health.capabilities:
             # Also proves the key is still valid in ``key`` mode, where ``/api/status`` is public.
             ambient = await self._async_call(self.client.async_get_context())
+        config: ConfigView | None = None
+        if CAPABILITY_FAMILY_MODE in health.capabilities:
+            # ``config.family.enabled`` is the persistent Family Mode setting.
+            config = await self._async_call(self.client.async_get_config())
 
-        self.capabilities = health.capabilities
-        return SmartFrameData(health=health, status=status, ambient=ambient)
+        self._async_track_capabilities(health.capabilities)
+        return SmartFrameData(health=health, status=status, ambient=ambient, config=config)
+
+    def _async_track_capabilities(self, capabilities: frozenset[str]) -> None:
+        """Cache the capabilities and reload the entry when the engine's set changes.
+
+        Platforms and services gate on ``capabilities`` at setup, so an engine that was
+        upgraded (or downgraded) needs a reload for its entities to follow.
+        """
+        previous, self.capabilities = self.capabilities, capabilities
+        if previous and previous != capabilities:
+            _LOGGER.info("Engine capabilities changed; reloading %s", self.config_entry.title)
+            self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+
+    async def async_action[T](self, awaitable: Awaitable[T]) -> T:
+        """Run a client call made on behalf of the user (entity action or service).
+
+        Failures surface as ``HomeAssistantError`` with a translated message; a rejected key
+        also starts the reauthentication flow.
+        """
+        try:
+            return await awaitable
+        except SmartFrameAuthError as err:
+            self.config_entry.async_start_reauth(self.hass)
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="invalid_auth"
+            ) from err
+        except SmartFrameValidationError as err:
+            # HTTP 422: the engine rejected what the user asked for.
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="request_rejected",
+                translation_placeholders={"error": err.detail or "HTTP 422"},
+            ) from err
+        except SmartFrameApiError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="action_failed",
+                translation_placeholders={"error": err.detail or f"HTTP {err.status}"},
+            ) from err
+        except SmartFrameError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="action_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    @callback
+    def async_apply_config(self, config: ConfigView) -> None:
+        """Publish a fresh ``ConfigView`` (a ``PUT /api/config`` reply) to the entities."""
+        if self.data is not None:
+            self.async_set_updated_data(replace(self.data, config=config))
 
     def _async_check_instance(self, health: HealthInfo) -> None:
         """Refuse to poll a different engine that took over this address."""
