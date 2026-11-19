@@ -1,0 +1,16 @@
+{
+  "domain": "smart_frame_engine",
+  "name": "Smart Frame Engine",
+  "codeowners": ["@ant1fr"],
+  "config_flow": true,
+  "documentation": "https://github.com/ant1fr/Smart-Frame-Engine-HA",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/ant1fr/Smart-Frame-Engine-HA/issues",
+  "requirements": [],
+  "version": "1.0.0",
+  "zeroconf": [
+    {
+      "type": "_smartframe._tcp.local."
+    }
+  ]
+}

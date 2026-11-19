@@ -1,0 +1,104 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Se connecter à Smart Frame Engine",
+        "description": "Saisissez l'adresse de votre Smart Frame Engine. Le port de l'API est 8080, sauf si vous l'avez modifié.",
+        "data": {
+          "host": "Hôte",
+          "port": "Port"
+        },
+        "data_description": {
+          "host": "Nom d'hôte ou adresse IP de la machine qui exécute Smart Frame Engine.",
+          "port": "Port du serveur web de Smart Frame Engine."
+        }
+      },
+      "auth": {
+        "title": "Authentification requise",
+        "description": "Ce Smart Frame Engine requiert une clé API. Vous la trouverez dans l'interface web du moteur.",
+        "data": {
+          "api_key": "Clé API"
+        },
+        "data_description": {
+          "api_key": "Clé API du moteur, envoyée dans l'en-tête X-API-Key."
+        }
+      },
+      "zeroconf_confirm": {
+        "title": "Ajouter {name} ?",
+        "description": "Smart Frame Engine **{name}** a été trouvé à l'adresse {host}:{port}. Voulez-vous l'ajouter à Home Assistant ? Si le moteur requiert une clé API, saisissez-la ci-dessous.",
+        "data": {
+          "api_key": "Clé API"
+        },
+        "data_description": {
+          "api_key": "Clé API du moteur. Ne la laissez vide que si le moteur ne requiert pas d'authentification."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Se réauthentifier sur {name}",
+        "description": "La clé API de **{name}** a été refusée. Saisissez la clé API actuelle.",
+        "data": {
+          "api_key": "Clé API"
+        },
+        "data_description": {
+          "api_key": "La clé API actuelle du moteur."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion",
+      "invalid_auth": "Authentification invalide",
+      "unknown": "Erreur inattendue"
+    },
+    "abort": {
+      "already_configured": "L'appareil est déjà configuré",
+      "already_in_progress": "La configuration est déjà en cours",
+      "cannot_connect": "Échec de la connexion",
+      "reauth_successful": "La réauthentification a réussi",
+      "integration_outdated": "Ce Smart Frame Engine est plus récent que ce que cette intégration prend en charge. Mettez à jour l'intégration Smart Frame Engine (HACS) puis réessayez.",
+      "server_outdated": "Ce Smart Frame Engine est trop ancien pour cette intégration. Mettez à jour le moteur puis réessayez.",
+      "instance_id_missing": "Ce Smart Frame Engine ne fournit pas d'identifiant d'instance. Mettez à jour le moteur vers la version 1.0.0-rc.2 ou ultérieure puis réessayez.",
+      "wrong_instance": "L'appareil à cette adresse est un autre Smart Frame Engine que celui qui est configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options de Smart Frame Engine",
+        "data": {
+          "scan_interval": "Intervalle d'interrogation (secondes)"
+        },
+        "data_description": {
+          "scan_interval": "Fréquence à laquelle Home Assistant interroge le moteur pour connaître son état (de 10 à 3600 secondes)."
+        }
+      }
+    }
+  },
+  "issues": {
+    "integration_outdated": {
+      "title": "L'intégration Smart Frame Engine doit être mise à jour",
+      "description": "Le moteur **{name}** (version {server_version}) utilise les versions d'API {min_api_version} à {api_version}, mais cette intégration ne prend en charge que la version {supported_version}. Le moteur est plus récent que l'intégration.\n\nMettez à jour l'intégration Smart Frame Engine dans HACS puis redémarrez Home Assistant. Ce problème disparaît de lui-même dès que les versions sont compatibles."
+    },
+    "server_outdated": {
+      "title": "Smart Frame Engine doit être mis à jour",
+      "description": "Le moteur **{name}** (version {server_version}) utilise les versions d'API {min_api_version} à {api_version}, mais cette intégration requiert la version {supported_version}. Le moteur est plus ancien que l'intégration.\n\nMettez à jour Smart Frame Engine. Ce problème disparaît de lui-même dès que les versions sont compatibles."
+    }
+  },
+  "exceptions": {
+    "invalid_auth": {
+      "message": "Le Smart Frame Engine a refusé la clé API."
+    },
+    "update_failed": {
+      "message": "Erreur de communication avec le Smart Frame Engine : {error}"
+    },
+    "incompatible_server": {
+      "message": "Le Smart Frame Engine est trop ancien : il utilise les versions d'API {min_api_version} à {api_version} mais cette intégration requiert la version {supported_version}. Mettez à jour le moteur."
+    },
+    "incompatible_integration": {
+      "message": "Le Smart Frame Engine est plus récent que cette intégration : il utilise les versions d'API {min_api_version} à {api_version} mais cette intégration ne prend en charge que la version {supported_version}. Mettez à jour l'intégration."
+    },
+    "instance_mismatch": {
+      "message": "L'appareil à l'adresse configurée n'est pas {name}. Il s'agit d'un autre Smart Frame Engine."
+    }
+  }
+}
