@@ -6,6 +6,8 @@ from ipaddress import ip_address
 from typing import Any
 
 from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PORT
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
@@ -33,7 +35,7 @@ def health_payload(
     capabilities: set[str] | frozenset[str] | None = None,
     instance_id: str | None = INSTANCE_ID,
     instance_name: str | None = INSTANCE_NAME,
-    version: str = "1.0.0rc2",
+    version: str = "1.0.0rc3",
 ) -> dict[str, Any]:
     """Return a ``GET /api/health`` body; ``instance_id=None`` mimics an rc.1 engine."""
     payload: dict[str, Any] = {
@@ -54,7 +56,8 @@ def health_payload(
 def status_payload() -> dict[str, Any]:
     """Return a ``GET /api/status`` body."""
     return {
-        "version": "1.0.0rc2",
+        "version": "1.0.0rc3",
+        "release": "1.0.0-rc.3",
         "uptime_s": 1234.5,
         "auth_enabled": False,
         "auth_mode": "open",
@@ -85,7 +88,20 @@ def status_payload() -> dict[str, Any]:
             "panel": "133",
             "panel_label": "13.3 inch",
             "power_mode": "deepsleep",
-            "telemetry": {"battery": 80},
+            "telemetry": {
+                "online": True,
+                "last_seen": "2026-11-19T09:59:00Z",
+                "last_checked": "2026-11-19T10:00:00Z",
+                "last_error": None,
+                "info": {
+                    "battery_percent": 80,
+                    "charging": False,
+                    "firmware_version": "1.2.3",
+                    "ip": "192.168.1.60",
+                    "rssi": -61,
+                    "raw": {},
+                },
+            },
         },
         "delivery": {
             "pending": False,
@@ -98,6 +114,7 @@ def status_payload() -> dict[str, Any]:
             },
         },
         "scheduler": {
+            "active_rule": {"kind": "immich", "source": "smart_mix"},
             "enabled": True,
             "running": False,
             "in_quiet_hours": False,
@@ -152,14 +169,48 @@ def mock_engine(
     aioclient_mock: AiohttpClientMocker,
     *,
     base: str = BASE,
+    status: dict[str, Any] | None = None,
+    config: dict[str, Any] | None = None,
+    context: dict[str, Any] | None = None,
     **health_kwargs: Any,
 ) -> None:
     """Register the endpoints polled by the coordinator for a healthy engine."""
     health = health_payload(**health_kwargs)
     aioclient_mock.get(f"{base}/api/health", json=health)
-    aioclient_mock.get(f"{base}/api/status", json=status_payload())
-    aioclient_mock.get(f"{base}/api/context", json=context_payload())
-    aioclient_mock.get(f"{base}/api/config", json=config_payload())
+    aioclient_mock.get(f"{base}/api/status", json=status or status_payload())
+    aioclient_mock.get(f"{base}/api/context", json=context or context_payload())
+    aioclient_mock.get(f"{base}/api/config", json=config or config_payload())
+
+
+async def setup_engine(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    *,
+    api_key: str | None = None,
+    entry: MockConfigEntry | None = None,
+    **mock_kwargs: Any,
+) -> MockConfigEntry:
+    """Mock a healthy engine and set its config entry up."""
+    mock_engine(aioclient_mock, **mock_kwargs)
+    entry = entry or make_entry(api_key=api_key)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+def entity_id(hass: HomeAssistant, platform: str, key: str, instance_id: str = INSTANCE_ID) -> str:
+    """Return the entity id registered for ``key`` (fails the test when it does not exist)."""
+    found = er.async_get(hass).async_get_entity_id(platform, DOMAIN, f"{instance_id}_{key}")
+    assert found is not None, f"no {platform} entity with key {key}"
+    return found
+
+
+def has_entity(hass: HomeAssistant, platform: str, key: str) -> bool:
+    """Whether an entity with ``key`` is registered."""
+    return (
+        er.async_get(hass).async_get_entity_id(platform, DOMAIN, f"{INSTANCE_ID}_{key}") is not None
+    )
 
 
 def make_entry(
@@ -186,7 +237,7 @@ def zeroconf_info(
 ) -> ZeroconfServiceInfo:
     """Return a discovery record of ``_smartframe._tcp.local.``."""
     properties: dict[str, str | None] = {
-        "version": "1.0.0rc2",
+        "version": "1.0.0rc3",
         "api_version": api_version,
         "min_api_version": min_api_version,
         "path": path,

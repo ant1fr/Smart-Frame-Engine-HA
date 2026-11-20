@@ -1,0 +1,131 @@
+set_ambient_context:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+    family_mode:
+      required: false
+      selector:
+        boolean:
+    presence:
+      required: false
+      example: '["Alice", "Bob"]'
+      selector:
+        text:
+          multiple: true
+    weather:
+      required: false
+      example: rainy
+      selector:
+        text:
+    season:
+      required: false
+      selector:
+        select:
+          options:
+            - spring
+            - summer
+            - autumn
+            - winter
+          translation_key: season
+    boost_tags:
+      required: false
+      example: '["beach", "birthday"]'
+      selector:
+        text:
+          multiple: true
+    boost_people:
+      required: false
+      example: '["Alice"]'
+      selector:
+        text:
+          multiple: true
+    ttl_minutes:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+
+clear_ambient_context:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+    field:
+      required: false
+      selector:
+        select:
+          options:
+            - presence
+            - family_mode
+            - weather
+            - season
+            - boost_tags
+            - boost_people
+          translation_key: ambient_field
+
+send_title_card:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+    title:
+      required: true
+      example: Dinner is ready
+      selector:
+        text:
+    subtitle:
+      required: false
+      selector:
+        text:
+    caption:
+      required: false
+      selector:
+        text:
+    accent:
+      required: false
+      selector:
+        select:
+          options:
+            - red
+            - yellow
+            - blue
+            - green
+            - white
+          translation_key: accent
+    ephemeral:
+      required: false
+      default: true
+      selector:
+        boolean:
+    ttl_minutes:
+      required: false
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    hold_minutes:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    push_to_fraimic:
+      required: false
+      default: true
+      selector:
+        boolean:

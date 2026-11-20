@@ -8,6 +8,14 @@ import re
 from typing import Any
 
 import pytest
+import yaml
+
+from custom_components.smart_frame_engine import services
+from custom_components.smart_frame_engine.binary_sensor import BINARY_SENSORS
+from custom_components.smart_frame_engine.button import BUTTONS
+from custom_components.smart_frame_engine.image import CURRENT_IMAGE
+from custom_components.smart_frame_engine.sensor import REFRESH_RULE_SOURCES, SENSORS
+from custom_components.smart_frame_engine.switch import FAMILY_MODE
 
 ROOT = Path(__file__).parent.parent
 INTEGRATION = ROOT / "custom_components" / "smart_frame_engine"
@@ -80,3 +88,81 @@ def test_repair_issues_are_translated(issue: str) -> None:
         data = _load(INTEGRATION / "translations" / f"{lang}.json")
         assert data["issues"][issue]["title"]
         assert data["issues"][issue]["description"]
+
+
+# -- Services, entities and exceptions are fully translated ----------------------------
+
+
+def _english() -> dict[str, Any]:
+    return _load(INTEGRATION / "translations" / "en.json")
+
+
+def test_services_yaml_matches_schemas_and_translations() -> None:
+    """Every service/field in services.yaml has a schema key and an English name+description."""
+    definitions = yaml.safe_load((INTEGRATION / "services.yaml").read_text(encoding="utf-8"))
+    schemas = {
+        services.SERVICE_SET_AMBIENT_CONTEXT: services.SET_AMBIENT_CONTEXT_SCHEMA,
+        services.SERVICE_CLEAR_AMBIENT_CONTEXT: services.CLEAR_AMBIENT_CONTEXT_SCHEMA,
+        services.SERVICE_SEND_TITLE_CARD: services.SEND_TITLE_CARD_SCHEMA,
+    }
+    translated = _english()["services"]
+
+    assert set(definitions) == set(schemas) == set(translated)
+    for name, definition in definitions.items():
+        fields = set(definition["fields"])
+        assert fields == {str(key) for key in schemas[name].schema}, name
+        assert fields == set(translated[name]["fields"]), name
+        assert translated[name]["name"]
+        assert translated[name]["description"]
+        for field, text in translated[name]["fields"].items():
+            assert text["name"], (name, field)
+            assert text["description"], (name, field)
+
+
+def test_select_selectors_are_translated() -> None:
+    """Each translation_key used by a select selector lists exactly its options."""
+    definitions = yaml.safe_load((INTEGRATION / "services.yaml").read_text(encoding="utf-8"))
+    selectors = _english()["selector"]
+    seen = 0
+    for definition in definitions.values():
+        for field in definition["fields"].values():
+            select = field["selector"].get("select")
+            if select:
+                seen += 1
+                assert set(select["options"]) == set(
+                    selectors[select["translation_key"]]["options"]
+                )
+    assert seen == 3
+
+
+def test_every_entity_has_a_translated_name() -> None:
+    """Entity names come from translations: every translation_key must exist."""
+    entities = _english()["entity"]
+    expected = {
+        "binary_sensor": BINARY_SENSORS,
+        "button": BUTTONS,
+        "image": (CURRENT_IMAGE,),
+        "sensor": SENSORS,
+        "switch": (FAMILY_MODE,),
+    }
+    assert set(entities) == set(expected)
+    for platform, descriptions in expected.items():
+        keys = {d.translation_key for d in descriptions}
+        assert keys == {d.key for d in descriptions}, platform
+        assert keys == set(entities[platform]), platform
+    assert set(entities["sensor"]["refresh_rule"]["state"]) == set(REFRESH_RULE_SOURCES)
+
+
+def test_every_translation_key_used_in_code_exists() -> None:
+    """Exceptions and issues raised with a translation_key must be translated."""
+    english = _english()
+    known = set(english["exceptions"]) | set(english["issues"])
+    used: set[str] = set()
+    for path in INTEGRATION.glob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        used |= set(re.findall(r'translation_key="(\w+)"', text))
+        used |= set(re.findall(r'translation_key=\(\s*"(\w+)"', text))
+    # Keys chosen at runtime in coordinator.py (``"a" if x else "b"``) are listed explicitly.
+    used |= {"incompatible_server", "incompatible_integration"}
+    entity_keys = {k for platform in english["entity"].values() for k in platform}
+    assert used - entity_keys <= known, sorted(used - entity_keys - known)

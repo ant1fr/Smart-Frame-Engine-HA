@@ -74,6 +74,205 @@
       }
     }
   },
+  "entity": {
+    "binary_sensor": {
+      "engine_connected": {
+        "name": "Moteur connecté"
+      },
+      "frame_online": {
+        "name": "Cadre en ligne"
+      },
+      "frame_charging": {
+        "name": "Cadre en charge"
+      },
+      "delivery_pending": {
+        "name": "Image en attente d'envoi"
+      },
+      "ephemeral_active": {
+        "name": "Image temporaire"
+      },
+      "quiet_hours": {
+        "name": "Heures calmes"
+      }
+    },
+    "button": {
+      "force_refresh": {
+        "name": "Rafraîchir l'image"
+      },
+      "wake_frame": {
+        "name": "Réveiller le cadre"
+      }
+    },
+    "image": {
+      "current_image": {
+        "name": "Image actuelle"
+      }
+    },
+    "sensor": {
+      "engine_version": {
+        "name": "Version du moteur"
+      },
+      "active_source": {
+        "name": "Source de l'image"
+      },
+      "refresh_rule": {
+        "name": "Mode de rafraîchissement",
+        "state": {
+          "pinned": "Règle fixée",
+          "smart_mix": "Smart Mix",
+          "last": "Dernière demande"
+        }
+      },
+      "media_title": {
+        "name": "Titre du média"
+      },
+      "ambient_context": {
+        "name": "Contexte ambiant"
+      },
+      "last_delivery": {
+        "name": "Dernier envoi"
+      },
+      "frame_last_seen": {
+        "name": "Cadre vu pour la dernière fois"
+      },
+      "frame_battery": {
+        "name": "Batterie du cadre"
+      },
+      "frame_wifi_signal": {
+        "name": "Signal Wi-Fi du cadre"
+      }
+    },
+    "switch": {
+      "family_mode": {
+        "name": "Mode Famille"
+      }
+    }
+  },
+  "services": {
+    "set_ambient_context": {
+      "name": "Définir le contexte ambiant",
+      "description": "Informe le moteur de la situation actuelle (météo, qui est à la maison, saison, mises en avant). Chaque champ expire de lui-même. Les champs omis conservent leur valeur ; un texte ou une liste vide efface le champ.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Moteur",
+          "description": "Le Smart Frame Engine à utiliser. Facultatif si un seul est configuré."
+        },
+        "family_mode": {
+          "name": "Mode Famille",
+          "description": "Force temporairement le mode Famille activé ou désactivé."
+        },
+        "presence": {
+          "name": "Personnes à la maison",
+          "description": "Personnes Immich présentes à la maison ; leurs photos sont favorisées (20 maximum)."
+        },
+        "weather": {
+          "name": "Météo",
+          "description": "Un mot-clé météo connu du moteur, par exemple rainy (80 caractères maximum)."
+        },
+        "season": {
+          "name": "Saison",
+          "description": "Remplace la saison du calendrier."
+        },
+        "boost_tags": {
+          "name": "Mots-clés à favoriser",
+          "description": "Expressions de recherche à favoriser, par exemple beach ou birthday (20 maximum)."
+        },
+        "boost_people": {
+          "name": "Personnes à favoriser",
+          "description": "Personnes Immich à favoriser (20 maximum)."
+        },
+        "ttl_minutes": {
+          "name": "Durée de vie",
+          "description": "Durée des champs définis par cet appel, en minutes (1 à 10080). La valeur par défaut du moteur s'applique si le champ est vide."
+        }
+      }
+    },
+    "clear_ambient_context": {
+      "name": "Effacer le contexte ambiant",
+      "description": "Efface le contexte ambiant, ou seulement l'un de ses champs.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Moteur",
+          "description": "Le Smart Frame Engine à utiliser. Facultatif si un seul est configuré."
+        },
+        "field": {
+          "name": "Champ",
+          "description": "Efface uniquement ce champ. Laissez vide pour tout effacer."
+        }
+      }
+    },
+    "send_title_card": {
+      "name": "Envoyer une carte de titre",
+      "description": "Affiche une carte de texte (titre, sous-titre, légende) sur le cadre.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Moteur",
+          "description": "Le Smart Frame Engine à utiliser. Facultatif si un seul est configuré."
+        },
+        "title": {
+          "name": "Titre",
+          "description": "Grand texte centré (de 1 à 200 caractères)."
+        },
+        "subtitle": {
+          "name": "Sous-titre",
+          "description": "Texte plus petit sous le titre (200 caractères maximum)."
+        },
+        "caption": {
+          "name": "Légende",
+          "description": "Petit texte en bas (200 caractères maximum)."
+        },
+        "accent": {
+          "name": "Couleur d'accent",
+          "description": "Couleur du filet sous le titre."
+        },
+        "ephemeral": {
+          "name": "Temporaire",
+          "description": "Si activé, l'image précédente revient ensuite."
+        },
+        "ttl_minutes": {
+          "name": "Durée",
+          "description": "Cartes temporaires uniquement : minutes avant le retour de l'image précédente (1 à 10080). La valeur par défaut du moteur (60) s'applique si le champ est vide."
+        },
+        "hold_minutes": {
+          "name": "Protéger du rafraîchissement",
+          "description": "Minutes pendant lesquelles les rafraîchissements planifiés ne remplaceront pas la carte (1 à 10080)."
+        },
+        "push_to_fraimic": {
+          "name": "Envoyer au cadre",
+          "description": "Désactivez pour seulement générer un aperçu sans l'envoyer au cadre."
+        }
+      }
+    }
+  },
+  "selector": {
+    "season": {
+      "options": {
+        "spring": "Printemps",
+        "summer": "Été",
+        "autumn": "Automne",
+        "winter": "Hiver"
+      }
+    },
+    "ambient_field": {
+      "options": {
+        "presence": "Personnes à la maison",
+        "family_mode": "Mode Famille",
+        "weather": "Météo",
+        "season": "Saison",
+        "boost_tags": "Mots-clés à favoriser",
+        "boost_people": "Personnes à favoriser"
+      }
+    },
+    "accent": {
+      "options": {
+        "red": "Rouge",
+        "yellow": "Jaune",
+        "blue": "Bleu",
+        "green": "Vert",
+        "white": "Blanc"
+      }
+    }
+  },
   "issues": {
     "integration_outdated": {
       "title": "L'intégration Smart Frame Engine doit être mise à jour",
@@ -99,6 +298,27 @@
     },
     "instance_mismatch": {
       "message": "L'appareil à l'adresse configurée n'est pas {name}. Il s'agit d'un autre Smart Frame Engine."
+    },
+    "action_failed": {
+      "message": "Le Smart Frame Engine n'a pas pu effectuer l'action : {error}"
+    },
+    "request_rejected": {
+      "message": "Le Smart Frame Engine a rejeté la requête : {error}"
+    },
+    "capability_not_supported": {
+      "message": "Le Smart Frame Engine {name} ne prend pas en charge cette fonctionnalité ({capability}). Mettez à jour le moteur pour l'utiliser."
+    },
+    "no_context_fields": {
+      "message": "Indiquez au moins un champ de contexte ambiant à définir (mode Famille, présence, météo, saison, mots-clés ou personnes à favoriser)."
+    },
+    "config_entry_required": {
+      "message": "Plusieurs Smart Frame Engine sont configurés. Choisissez celui à utiliser."
+    },
+    "entry_not_found": {
+      "message": "Aucun Smart Frame Engine avec l'identifiant {entry_id} n'a été trouvé."
+    },
+    "no_engine_loaded": {
+      "message": "Le Smart Frame Engine n'est pas chargé. Vérifiez qu'il est joignable puis réessayez."
     }
   }
 }

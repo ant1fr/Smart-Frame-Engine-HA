@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 
 import aiohttp
@@ -19,6 +20,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.smart_frame_engine.const import (
     ALL_CAPABILITIES,
+    CAPABILITY_FORCE_REFRESH,
     CAPABILITY_TITLE_CARD,
     CONF_SCAN_INTERVAL,
     DOMAIN,
@@ -41,6 +43,20 @@ def _issue(hass: HomeAssistant, entry_id: str) -> ir.IssueEntry | None:
     return ir.async_get(hass).async_get_issue(DOMAIN, f"incompatible_api_{entry_id}")
 
 
+async def _wait_for_state(
+    hass: HomeAssistant, entry: MockConfigEntry, state: ConfigEntryState
+) -> None:
+    """Wait (bounded) for a setup that starts from a timer.
+
+    The first load of a platform's dependencies (for instance ``http``) happens off the event
+    loop, so ``async_block_till_done`` alone can return while the setup is still running.
+    """
+    async with asyncio.timeout(10):
+        while entry.state is not state:
+            await hass.async_block_till_done()
+            await asyncio.sleep(0.01)
+
+
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
@@ -60,7 +76,7 @@ async def test_setup_and_unload(hass: HomeAssistant, aioclient_mock: AiohttpClie
     coordinator: SmartFrameCoordinator = entry.runtime_data
     assert coordinator.capabilities == ALL_CAPABILITIES
     assert coordinator.data.health.instance_id == INSTANCE_ID
-    assert coordinator.data.status.version == "1.0.0rc2"
+    assert coordinator.data.status.version == "1.0.0rc3"
     assert coordinator.data.ambient is not None
     assert coordinator.data.ambient.family_active is True
     assert _issue(hass, entry.entry_id) is None
@@ -221,7 +237,7 @@ async def test_incompatible_engine_creates_repair_issue(
     assert issue.is_fixable is False
     assert issue.translation_placeholders == {
         "name": entry.title,
-        "server_version": "1.0.0rc2",
+        "server_version": "1.0.0rc3",
         "api_version": str(api_version),
         "min_api_version": str(min_api_version),
         "supported_version": "1",
@@ -267,9 +283,8 @@ async def test_issue_cleared_when_setup_retry_succeeds(
     aioclient_mock.clear_requests()
     mock_engine(aioclient_mock)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(minutes=5))
-    await hass.async_block_till_done()
+    await _wait_for_state(hass, entry, ConfigEntryState.LOADED)
 
-    assert entry.state is ConfigEntryState.LOADED
     assert _issue(hass, entry.entry_id) is None
 
 
@@ -285,3 +300,41 @@ async def test_removing_entry_deletes_issue(
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert _issue(hass, entry.entry_id) is None
+
+
+# -- Capability changes ----------------------------------------------------------------
+
+
+async def test_capability_change_reloads_the_entry(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """An engine that gains or loses a capability gets its entities rebuilt."""
+    mock_engine(aioclient_mock)
+    entry = make_entry()
+    await _setup(hass, entry)
+    first: SmartFrameCoordinator = entry.runtime_data
+    assert CAPABILITY_FORCE_REFRESH in first.capabilities
+
+    aioclient_mock.clear_requests()
+    mock_engine(aioclient_mock, capabilities=ALL_CAPABILITIES - {CAPABILITY_FORCE_REFRESH})
+    await first.async_refresh()
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data is not first
+    assert CAPABILITY_FORCE_REFRESH not in entry.runtime_data.capabilities
+
+
+async def test_unchanged_capabilities_do_not_reload(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Normal polling never reloads the entry."""
+    mock_engine(aioclient_mock)
+    entry = make_entry()
+    await _setup(hass, entry)
+    first: SmartFrameCoordinator = entry.runtime_data
+
+    await first.async_refresh()
+    await hass.async_block_till_done()
+
+    assert entry.runtime_data is first

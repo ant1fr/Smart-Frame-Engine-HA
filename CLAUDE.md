@@ -25,6 +25,7 @@ Official Home Assistant custom integration (`smart_frame_engine`) for **Smart Fr
 - `custom_components/smart_frame_engine/image.py` — Live preview entity of currently rendered frame image
 - `custom_components/smart_frame_engine/manifest.json` — HA integration metadata (strict `hassfest` key sorting)
 - `custom_components/smart_frame_engine/sensor.py` — Active source/mode, media title, engine version, ambient context
+- `custom_components/smart_frame_engine/services.py` — Service handlers (capability-gated, `ServiceValidationError`), registered once from `async_setup`
 - `custom_components/smart_frame_engine/services.yaml` — Service definitions & UI selectors
 - `custom_components/smart_frame_engine/strings.json` — Base UI & error strings (must stay identical to `translations/en.json`)
 - `custom_components/smart_frame_engine/switch.py` — Family Mode toggle

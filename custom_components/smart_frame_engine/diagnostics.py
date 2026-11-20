@@ -12,7 +12,17 @@ from homeassistant.core import HomeAssistant
 from .coordinator import SmartFrameConfigEntry
 
 # The engine never returns secrets, but anything key-like is redacted defensively.
-TO_REDACT = {CONF_API_KEY, "api_key", "password", "token", "X-API-Key"}
+TO_REDACT = {
+    CONF_API_KEY,
+    "api_key",
+    "password",
+    "token",
+    "X-API-Key",
+    # Personal data: provider metadata (people, places) and the ambient people lists.
+    "details",
+    "presence",
+    "boost_people",
+}
 
 
 async def async_get_config_entry_diagnostics(
@@ -39,6 +49,7 @@ async def async_get_config_entry_diagnostics(
                 ),
             },
             "capabilities": sorted(coordinator.capabilities),
+            "family_enabled": data.config.family_enabled if data and data.config else None,
             "health": data.health.as_dict() if data else None,
             "status": asdict(data.status) if data else None,
             "ambient": asdict(data.ambient) if data and data.ambient else None,

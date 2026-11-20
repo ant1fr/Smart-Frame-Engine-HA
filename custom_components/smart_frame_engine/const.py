@@ -40,7 +40,7 @@ TXT_PATH: Final = "path"
 TXT_AUTH: Final = "auth"
 TXT_INSTANCE_ID: Final = "instance_id"
 
-# Capability flags advertised in ``GET /api/health`` (contract v1.0, 18 flags).
+# Capability flags advertised in ``GET /api/health`` (contract v1.2, 19 flags).
 CAPABILITY_ACTIVITY_LOG: Final = "activity_log"
 CAPABILITY_AMBIENT_CONTEXT: Final = "ambient_context"
 CAPABILITY_DISPLAY_IMMICH: Final = "display_immich"
@@ -57,6 +57,7 @@ CAPABILITY_PLAYGROUND: Final = "playground"
 CAPABILITY_RANDOM_DISCOVERY: Final = "random_discovery"
 CAPABILITY_SMART_MIX: Final = "smart_mix"
 CAPABILITY_SMART_MIX_CONTEXT: Final = "smart_mix_context"
+CAPABILITY_SMART_MIX_KINDS: Final = "smart_mix_kinds"
 CAPABILITY_TITLE_CARD: Final = "title_card"
 CAPABILITY_UPLOAD_IMAGE: Final = "upload_image"
 
@@ -78,6 +79,7 @@ ALL_CAPABILITIES: Final[frozenset[str]] = frozenset(
         CAPABILITY_RANDOM_DISCOVERY,
         CAPABILITY_SMART_MIX,
         CAPABILITY_SMART_MIX_CONTEXT,
+        CAPABILITY_SMART_MIX_KINDS,
         CAPABILITY_TITLE_CARD,
         CAPABILITY_UPLOAD_IMAGE,
     }
