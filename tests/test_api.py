@@ -470,6 +470,121 @@ async def test_title_card_minimal_and_full(
     assert _last_call(aioclient_mock)[2] == {"title": "Hello", "ttl_minutes": 5}
 
 
+async def test_now_playing_body(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
+    """POST /api/display/now-playing sends only the documented fields that were given."""
+    aioclient_mock.post(f"{BASE}/api/display/now-playing", json=display_payload())
+    client = _client(hass, API_KEY)
+
+    await client.async_now_playing("Daft Punk")
+    call = _last_call(aioclient_mock)
+    assert (call[0], call[1].path, call[2]) == (
+        "POST",
+        "/api/display/now-playing",
+        {"artist": "Daft Punk"},
+    )
+    assert call[3]["X-API-Key"] == API_KEY
+
+    result = await client.async_now_playing(
+        "Daft Punk",
+        album="Discovery",
+        title="One More Time",
+        artwork_url="http://ha/cover.jpg",
+        duration_seconds=320.0,
+        position_seconds=0.0,
+        enrich_artwork=False,
+        ephemeral=False,
+        hold_minutes=30,
+        push_to_fraimic=False,
+        show_title=False,
+        style="vinyl",
+        ttl_seconds=120,
+    )
+    assert _last_call(aioclient_mock)[2] == {
+        "artist": "Daft Punk",
+        "album": "Discovery",
+        "title": "One More Time",
+        "artwork_url": "http://ha/cover.jpg",
+        "duration_seconds": 320.0,
+        "position_seconds": 0.0,
+        "enrich_artwork": False,
+        "ephemeral": False,
+        "hold_minutes": 30,
+        "push_to_fraimic": False,
+        "show_title": False,
+        "style": "vinyl",
+        "ttl_seconds": 120,
+    }
+    assert result.image.source == "immich"
+
+
+async def test_now_playing_deduplicated_result(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Sending the album that is already shown answers deduplicated: true."""
+    aioclient_mock.post(
+        f"{BASE}/api/display/now-playing", json=display_payload() | {"deduplicated": True}
+    )
+    assert (await _client(hass).async_now_playing("Air")).deduplicated is True
+
+
+async def test_display_tmdb_body(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
+    """POST /api/display/tmdb sends only the documented fields that were given."""
+    aioclient_mock.post(f"{BASE}/api/display/tmdb", json=display_payload())
+    client = _client(hass, API_KEY)
+
+    await client.async_display_tmdb("Blade Runner")
+    call = _last_call(aioclient_mock)
+    assert (call[0], call[1].path, call[2]) == (
+        "POST",
+        "/api/display/tmdb",
+        {"query": "Blade Runner"},
+    )
+    assert call[3]["X-API-Key"] == API_KEY
+
+    await client.async_display_tmdb(
+        "Severance",
+        media_type="tv",
+        season=0,
+        year=2022,
+        language="fr-CA",
+        fallback_url="http://ha/poster.jpg",
+        ephemeral=False,
+        ttl_minutes=90,
+        hold_minutes=15,
+        push_to_fraimic=False,
+    )
+    assert _last_call(aioclient_mock)[2] == {
+        "query": "Severance",
+        "media_type": "tv",
+        "season": 0,
+        "year": 2022,
+        "language": "fr-CA",
+        "fallback_url": "http://ha/poster.jpg",
+        "ephemeral": False,
+        "ttl_minutes": 90,
+        "hold_minutes": 15,
+        "push_to_fraimic": False,
+    }
+
+
+@pytest.mark.parametrize("status", [404, 409, 502, 504])
+async def test_display_tmdb_errors(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, status: int
+) -> None:
+    """The documented TMDB error statuses carry the engine's message."""
+    aioclient_mock.post(f"{BASE}/api/display/tmdb", status=status, json={"detail": "nope"})
+    with pytest.raises(SmartFrameApiError) as err:
+        await _client(hass).async_display_tmdb("x")
+    assert (err.value.status, err.value.detail) == (status, "nope")
+
+
+async def test_now_playing_422(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
+    """A rejected cover request is a validation error."""
+    aioclient_mock.post(f"{BASE}/api/display/now-playing", status=422, json={"detail": "bad"})
+    with pytest.raises(SmartFrameValidationError):
+        await _client(hass).async_now_playing("Air")
+
+
 async def test_wakeup_non_blocking_returns_202(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:

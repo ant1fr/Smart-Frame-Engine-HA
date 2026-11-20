@@ -669,6 +669,8 @@ class WakeupResult:
 AmbientField = Literal["presence", "family_mode", "weather", "season", "boost_tags", "boost_people"]
 Season = Literal["spring", "summer", "autumn", "winter"]
 Accent = Literal["red", "yellow", "blue", "green", "white"]
+MusicStyle = Literal["sleeve", "vinyl"]
+TmdbMediaType = Literal["movie", "tv", "multi"]
 
 
 class _Unset(enum.Enum):
@@ -945,6 +947,83 @@ class SmartFrameClient:
         if ttl_minutes is not UNSET:
             body["ttl_minutes"] = ttl_minutes
         _, data = await self._json("POST", "/api/display/title-card", json_body=body)
+        return DisplayResult.from_dict(data)
+
+    async def async_now_playing(
+        self,
+        artist: str,
+        *,
+        album: str | None = None,
+        title: str | None = None,
+        artwork_url: str | None = None,
+        duration_seconds: float | None = None,
+        position_seconds: float | None = None,
+        enrich_artwork: bool | None = None,
+        ephemeral: bool | None = None,
+        hold_minutes: int | None = None,
+        push_to_fraimic: bool | None = None,
+        show_title: bool | None = None,
+        style: MusicStyle | None = None,
+        ttl_seconds: int | None = None,
+    ) -> DisplayResult:
+        """``POST /api/display/now-playing``: show the cover of the track that is playing.
+
+        The cover given in ``artwork_url`` is tried first; without a usable one the engine
+        looks a cover up itself (``enrich_artwork``, on by default). Omitted options keep
+        the engine's defaults. Sending the album that is already shown only moves its expiry.
+        """
+        body: dict[str, Any] = {"artist": artist}
+        optional: dict[str, Any] = {
+            "album": album,
+            "title": title,
+            "artwork_url": artwork_url,
+            "duration_seconds": duration_seconds,
+            "position_seconds": position_seconds,
+            "enrich_artwork": enrich_artwork,
+            "ephemeral": ephemeral,
+            "hold_minutes": hold_minutes,
+            "push_to_fraimic": push_to_fraimic,
+            "show_title": show_title,
+            "style": style,
+            "ttl_seconds": ttl_seconds,
+        }
+        body.update({key: value for key, value in optional.items() if value is not None})
+        _, data = await self._json("POST", "/api/display/now-playing", json_body=body)
+        return DisplayResult.from_dict(data)
+
+    async def async_display_tmdb(
+        self,
+        query: str,
+        *,
+        media_type: TmdbMediaType | None = None,
+        season: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        fallback_url: str | None = None,
+        ephemeral: bool | None = None,
+        ttl_minutes: int | None = None,
+        hold_minutes: int | None = None,
+        push_to_fraimic: bool | None = None,
+    ) -> DisplayResult:
+        """``POST /api/display/tmdb``: show the poster of a movie or series.
+
+        ``fallback_url`` is only used when TMDB has no match or fails. Omitted options keep
+        the engine's defaults.
+        """
+        body: dict[str, Any] = {"query": query}
+        optional: dict[str, Any] = {
+            "media_type": media_type,
+            "season": season,
+            "year": year,
+            "language": language,
+            "fallback_url": fallback_url,
+            "ephemeral": ephemeral,
+            "ttl_minutes": ttl_minutes,
+            "hold_minutes": hold_minutes,
+            "push_to_fraimic": push_to_fraimic,
+        }
+        body.update({key: value for key, value in optional.items() if value is not None})
+        _, data = await self._json("POST", "/api/display/tmdb", json_body=body)
         return DisplayResult.from_dict(data)
 
     async def async_wakeup(self, *, wait: bool = False) -> WakeupResult:

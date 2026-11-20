@@ -104,6 +104,8 @@ def test_services_yaml_matches_schemas_and_translations() -> None:
         services.SERVICE_SET_AMBIENT_CONTEXT: services.SET_AMBIENT_CONTEXT_SCHEMA,
         services.SERVICE_CLEAR_AMBIENT_CONTEXT: services.CLEAR_AMBIENT_CONTEXT_SCHEMA,
         services.SERVICE_SEND_TITLE_CARD: services.SEND_TITLE_CARD_SCHEMA,
+        services.SERVICE_SHOW_NOW_PLAYING: services.SHOW_NOW_PLAYING_SCHEMA,
+        services.SERVICE_SHOW_MEDIA_POSTER: services.SHOW_MEDIA_POSTER_SCHEMA,
     }
     translated = _english()["services"]
 
@@ -132,7 +134,7 @@ def test_select_selectors_are_translated() -> None:
                 assert set(select["options"]) == set(
                     selectors[select["translation_key"]]["options"]
                 )
-    assert seen == 3
+    assert seen == 5
 
 
 def test_every_entity_has_a_translated_name() -> None:

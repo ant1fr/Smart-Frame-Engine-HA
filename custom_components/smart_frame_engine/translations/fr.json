@@ -242,9 +242,150 @@
           "description": "Désactivez pour seulement générer un aperçu sans l'envoyer au cadre."
         }
       }
+    },
+    "show_now_playing": {
+      "name": "Afficher la pochette d'album",
+      "description": "Affiche la pochette du morceau en cours de lecture, avec l'artiste et l'album. Choisissez un lecteur multimédia pour remplir les champs à partir de lui ; les valeurs que vous indiquez priment. La pochette envoyée par Home Assistant est essayée en premier ; sans pochette utilisable, le moteur en cherche une lui-même.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Moteur",
+          "description": "Le Smart Frame Engine à utiliser. Facultatif si un seul est configuré."
+        },
+        "media_player": {
+          "name": "Lecteur multimédia",
+          "description": "Remplit l'artiste, l'album, le titre, la position et la pochette à partir de ce lecteur."
+        },
+        "use_media_player_picture": {
+          "name": "Envoyer la pochette du lecteur",
+          "description": "Envoie au moteur la pochette du lecteur multimédia (activé par défaut). Désactivez pour laisser le moteur chercher la pochette lui-même."
+        },
+        "artist": {
+          "name": "Artiste",
+          "description": "Artiste du morceau (de 1 à 300 caractères)."
+        },
+        "album": {
+          "name": "Album",
+          "description": "Album du morceau (300 caractères maximum)."
+        },
+        "title": {
+          "name": "Titre du morceau",
+          "description": "Titre du morceau (300 caractères maximum)."
+        },
+        "artwork_url": {
+          "name": "URL de la pochette",
+          "description": "Adresse de la pochette. Elle doit être accessible par le moteur."
+        },
+        "duration_seconds": {
+          "name": "Durée du morceau",
+          "description": "Durée du morceau, en secondes."
+        },
+        "position_seconds": {
+          "name": "Position",
+          "description": "Position de lecture, en secondes."
+        },
+        "enrich_artwork": {
+          "name": "Chercher une pochette",
+          "description": "Si aucune pochette utilisable n'est fournie, laisse le moteur en chercher une (activé par défaut)."
+        },
+        "ephemeral": {
+          "name": "Temporaire",
+          "description": "Si activé, l'image précédente revient ensuite."
+        },
+        "hold_minutes": {
+          "name": "Protéger du rafraîchissement",
+          "description": "Minutes pendant lesquelles les rafraîchissements planifiés ne remplaceront pas la pochette (1 à 10080)."
+        },
+        "push_to_fraimic": {
+          "name": "Envoyer au cadre",
+          "description": "Désactivez pour seulement générer un aperçu sans l'envoyer au cadre."
+        },
+        "show_title": {
+          "name": "Afficher le titre du morceau",
+          "description": "Affiche le titre du morceau sur la pochette. Sans lui, le cadre n'est rafraîchi que lorsque l'album change."
+        },
+        "style": {
+          "name": "Style",
+          "description": "Affiche la pochette comme une pochette ou un vinyle."
+        },
+        "ttl_seconds": {
+          "name": "Durée",
+          "description": "Secondes avant le retour de l'image précédente (10 à 86400). Remplace la durée calculée à partir de la longueur du morceau."
+        }
+      }
+    },
+    "show_media_poster": {
+      "name": "Afficher l'affiche d'un film ou d'une série",
+      "description": "Trouve un film ou une série sur TMDB et affiche son affiche. Choisissez un lecteur multimédia pour remplir les champs à partir de lui ; les valeurs que vous indiquez priment. L'image du lecteur n'est utilisée que si TMDB ne trouve rien.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Moteur",
+          "description": "Le Smart Frame Engine à utiliser. Facultatif si un seul est configuré."
+        },
+        "media_player": {
+          "name": "Lecteur multimédia",
+          "description": "Remplit le titre, le type, la saison et l'image de secours à partir de ce lecteur."
+        },
+        "use_media_player_picture": {
+          "name": "Image du lecteur en secours",
+          "description": "Envoie l'image du lecteur multimédia, affichée si TMDB ne trouve pas d'affiche (activé par défaut)."
+        },
+        "query": {
+          "name": "Titre",
+          "description": "Titre du film ou de la série (de 1 à 200 caractères)."
+        },
+        "media_type": {
+          "name": "Type",
+          "description": "Cherche un film, une série, ou les deux."
+        },
+        "season": {
+          "name": "Saison",
+          "description": "Séries uniquement : privilégie l'affiche de cette saison."
+        },
+        "year": {
+          "name": "Année",
+          "description": "Année de sortie, pour départager des titres portant le même nom."
+        },
+        "language": {
+          "name": "Langue",
+          "description": "Langue de l'affiche, par exemple fr ou fr-CA. La langue du moteur s'applique si le champ est vide."
+        },
+        "fallback_url": {
+          "name": "URL de l'image de secours",
+          "description": "Image affichée si TMDB ne trouve rien. Elle doit être accessible par le moteur."
+        },
+        "ephemeral": {
+          "name": "Temporaire",
+          "description": "Si activé, l'image précédente revient ensuite."
+        },
+        "ttl_minutes": {
+          "name": "Durée",
+          "description": "Affiches temporaires uniquement : minutes avant le retour de l'image précédente (1 à 1440). La valeur par défaut du moteur s'applique si le champ est vide."
+        },
+        "hold_minutes": {
+          "name": "Protéger du rafraîchissement",
+          "description": "Minutes pendant lesquelles les rafraîchissements planifiés ne remplaceront pas l'affiche (1 à 10080)."
+        },
+        "push_to_fraimic": {
+          "name": "Envoyer au cadre",
+          "description": "Désactivez pour seulement générer un aperçu sans l'envoyer au cadre."
+        }
+      }
     }
   },
   "selector": {
+    "music_style": {
+      "options": {
+        "sleeve": "Pochette",
+        "vinyl": "Disque vinyle"
+      }
+    },
+    "media_type": {
+      "options": {
+        "movie": "Film",
+        "tv": "Série",
+        "multi": "Film ou série"
+      }
+    },
     "season": {
       "options": {
         "spring": "Printemps",
@@ -319,6 +460,15 @@
     },
     "no_engine_loaded": {
       "message": "Le Smart Frame Engine n'est pas chargé. Vérifiez qu'il est joignable puis réessayez."
+    },
+    "missing_artist": {
+      "message": "Aucun artiste à afficher. Indiquez un artiste, ou un lecteur multimédia qui en fournit un."
+    },
+    "missing_query": {
+      "message": "Aucun titre à rechercher. Indiquez un titre, ou un lecteur multimédia qui en fournit un."
+    },
+    "media_player_not_found": {
+      "message": "Le lecteur multimédia {entity_id} est introuvable."
     }
   }
 }

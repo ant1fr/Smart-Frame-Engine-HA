@@ -242,9 +242,150 @@
           "description": "Turn off to only render a preview without sending it to the frame."
         }
       }
+    },
+    "show_now_playing": {
+      "name": "Show album cover",
+      "description": "Shows the cover of the track that is playing, with the artist and album. Pick a media player to fill the fields from it; values you set yourself win. The cover sent by Home Assistant is tried first; without a usable one the engine looks a cover up itself.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Engine",
+          "description": "The Smart Frame Engine to use. Optional when only one is set up."
+        },
+        "media_player": {
+          "name": "Media player",
+          "description": "Fills the artist, album, title, position and cover from this player."
+        },
+        "use_media_player_picture": {
+          "name": "Send the player's cover",
+          "description": "Send the cover of the media player to the engine (on by default). Turn off to let the engine look the cover up itself."
+        },
+        "artist": {
+          "name": "Artist",
+          "description": "Artist of the track (1 to 300 characters)."
+        },
+        "album": {
+          "name": "Album",
+          "description": "Album of the track (up to 300 characters)."
+        },
+        "title": {
+          "name": "Track title",
+          "description": "Title of the track (up to 300 characters)."
+        },
+        "artwork_url": {
+          "name": "Cover URL",
+          "description": "Address of the cover. It must be reachable by the engine."
+        },
+        "duration_seconds": {
+          "name": "Track length",
+          "description": "Length of the track, in seconds."
+        },
+        "position_seconds": {
+          "name": "Position",
+          "description": "Playback position, in seconds."
+        },
+        "enrich_artwork": {
+          "name": "Look up a cover",
+          "description": "When no usable cover is given, let the engine look one up (on by default)."
+        },
+        "ephemeral": {
+          "name": "Temporary",
+          "description": "When on, the previous image comes back afterwards."
+        },
+        "hold_minutes": {
+          "name": "Protect from refresh",
+          "description": "Minutes during which scheduled refreshes will not replace the cover (1 to 10080)."
+        },
+        "push_to_fraimic": {
+          "name": "Send to frame",
+          "description": "Turn off to only render a preview without sending it to the frame."
+        },
+        "show_title": {
+          "name": "Print the track title",
+          "description": "Print the track title on the cover. Without it, the frame is only refreshed when the album changes."
+        },
+        "style": {
+          "name": "Style",
+          "description": "Show the cover as a sleeve or as a vinyl record."
+        },
+        "ttl_seconds": {
+          "name": "Duration",
+          "description": "Seconds before the previous image returns (10 to 86400). Overrides the duration worked out from the track length."
+        }
+      }
+    },
+    "show_media_poster": {
+      "name": "Show movie or series poster",
+      "description": "Finds a movie or series on TMDB and shows its poster. Pick a media player to fill the fields from it; values you set yourself win. The player's picture is only used when TMDB has no match.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Engine",
+          "description": "The Smart Frame Engine to use. Optional when only one is set up."
+        },
+        "media_player": {
+          "name": "Media player",
+          "description": "Fills the title, type, season and fallback picture from this player."
+        },
+        "use_media_player_picture": {
+          "name": "Use the player's picture as fallback",
+          "description": "Send the picture of the media player, shown when TMDB finds no poster (on by default)."
+        },
+        "query": {
+          "name": "Title",
+          "description": "Title of the movie or series (1 to 200 characters)."
+        },
+        "media_type": {
+          "name": "Type",
+          "description": "Look for a movie, a series, or both."
+        },
+        "season": {
+          "name": "Season",
+          "description": "Series only: prefer the poster of this season."
+        },
+        "year": {
+          "name": "Year",
+          "description": "Release year, to tell apart titles with the same name."
+        },
+        "language": {
+          "name": "Language",
+          "description": "Language of the poster, for example fr or fr-CA. The engine's language applies when left empty."
+        },
+        "fallback_url": {
+          "name": "Fallback picture URL",
+          "description": "Picture shown when TMDB has no match. It must be reachable by the engine."
+        },
+        "ephemeral": {
+          "name": "Temporary",
+          "description": "When on, the previous image comes back afterwards."
+        },
+        "ttl_minutes": {
+          "name": "Duration",
+          "description": "Temporary posters only: minutes before the previous image returns (1 to 1440). The engine's default applies when left empty."
+        },
+        "hold_minutes": {
+          "name": "Protect from refresh",
+          "description": "Minutes during which scheduled refreshes will not replace the poster (1 to 10080)."
+        },
+        "push_to_fraimic": {
+          "name": "Send to frame",
+          "description": "Turn off to only render a preview without sending it to the frame."
+        }
+      }
     }
   },
   "selector": {
+    "music_style": {
+      "options": {
+        "sleeve": "Sleeve",
+        "vinyl": "Vinyl record"
+      }
+    },
+    "media_type": {
+      "options": {
+        "movie": "Movie",
+        "tv": "Series",
+        "multi": "Movie or series"
+      }
+    },
     "season": {
       "options": {
         "spring": "Spring",
@@ -319,6 +460,15 @@
     },
     "no_engine_loaded": {
       "message": "The Smart Frame Engine is not loaded. Check that it is reachable and try again."
+    },
+    "missing_artist": {
+      "message": "No artist to show. Give an artist, or a media player that reports one."
+    },
+    "missing_query": {
+      "message": "No title to look up. Give a title, or a media player that reports one."
+    },
+    "media_player_not_found": {
+      "message": "The media player {entity_id} was not found."
     }
   }
 }
