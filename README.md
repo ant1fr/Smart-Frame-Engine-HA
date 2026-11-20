@@ -1,12 +1,22 @@
 # Smart Frame Engine for Home Assistant
 
+[![Release](https://img.shields.io/github/v/release/ant1fr/Smart-Frame-Engine-HA)](https://github.com/ant1fr/Smart-Frame-Engine-HA/releases/latest)
+[![CI](https://github.com/ant1fr/Smart-Frame-Engine-HA/actions/workflows/ci.yml/badge.svg)](https://github.com/ant1fr/Smart-Frame-Engine-HA/actions/workflows/ci.yml)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![Home Assistant 2026.1.0+](https://img.shields.io/badge/Home%20Assistant-2026.1.0%2B-blue.svg)](https://www.home-assistant.io/)
+[![License: MIT](https://img.shields.io/github/license/ant1fr/Smart-Frame-Engine-HA)](LICENSE)
+
 Custom [Home Assistant](https://www.home-assistant.io/) integration for
 [Smart Frame Engine](https://github.com/ant1fr/Smart-Frame-Engine), installable through
 [HACS](https://hacs.xyz/) or manually.
 
-> **Status:** work in progress. Discovery, setup, authentication, compatibility checks, entities,
-> services and blueprints are in place. It has been tested against the engine's API contract
-> (v1.2), not yet against a real engine.
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ant1fr&repository=Smart-Frame-Engine-HA&category=integration)
+
+> **Status:** version 1.0.0. Discovery, setup, authentication, compatibility checks, entities,
+> services and blueprints are in place and covered by automated tests that replay the engine's API
+> contract (v1.2). It has **not yet been run against a real engine**: if something behaves
+> differently from what is described here, please
+> [open an issue](https://github.com/ant1fr/Smart-Frame-Engine-HA/issues).
 
 ## Requirements
 
@@ -20,6 +30,8 @@ Custom [Home Assistant](https://www.home-assistant.io/) integration for
 1. In HACS, open the menu and choose **Custom repositories**.
 2. Add `https://github.com/ant1fr/Smart-Frame-Engine-HA` with category **Integration**.
 3. Install **Smart Frame Engine** and restart Home Assistant.
+4. Your engine is usually discovered automatically (Settings > Devices & services). Otherwise add
+   it yourself: [![Add the integration to your Home Assistant.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=smart_frame_engine)
 
 ### Manual
 
