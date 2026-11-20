@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PORT, Platform
+from homeassistant.const import (
+    CONF_API_KEY,
+    CONF_HOST,
+    CONF_PORT,
+    CONF_SSL,
+    CONF_VERIFY_SSL,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -37,11 +44,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: SmartFrameConfigEntry) -> bool:
     """Set up one engine from a config entry."""
     client = SmartFrameClient(
-        async_get_clientsession(hass),
+        async_get_clientsession(hass, verify_ssl=entry.data.get(CONF_VERIFY_SSL, True)),
         entry.data[CONF_HOST],
         entry.data[CONF_PORT],
         entry.data.get(CONF_PATH, DEFAULT_PATH),
         entry.data.get(CONF_API_KEY),
+        ssl=entry.data.get(CONF_SSL, False),
     )
     coordinator = SmartFrameCoordinator(hass, entry, client)
     # Raises ConfigEntryNotReady (unreachable / incompatible) or ConfigEntryAuthFailed (401).

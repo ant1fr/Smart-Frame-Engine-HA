@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ssl
 from typing import Any
+from unittest.mock import MagicMock
 
 import aiohttp
 from homeassistant.core import HomeAssistant
@@ -17,6 +19,7 @@ from custom_components.smart_frame_engine.api import (
     SmartFrameClient,
     SmartFrameConnectionError,
     SmartFrameIncompatibleError,
+    SmartFrameSslError,
     SmartFrameValidationError,
     WithTtl,
     compatibility_target,
@@ -278,6 +281,45 @@ async def test_ipv6_host_and_root_path(
     aioclient_mock.get("http://[2001:db8::1]:8080/frame/api/health", json=health_payload())
     await client.async_get_health()
     assert client.base_url == "http://[2001:db8::1]:8080/frame"
+
+
+async def test_https_client_builds_https_urls(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """ssl=True switches every URL to https (default ports are dropped by the URL type)."""
+    client = SmartFrameClient(
+        async_get_clientsession(hass), "frame.example.org", 443, "/", ssl=True
+    )
+    aioclient_mock.get("https://frame.example.org/api/health", json=health_payload())
+    await client.async_get_health()
+    assert client.base_url == "https://frame.example.org/"
+
+
+async def test_https_client_on_a_custom_port_and_path(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A non-default HTTPS port and ROOT_PATH both appear in the request."""
+    client = SmartFrameClient(
+        async_get_clientsession(hass), "frame.example.org", 8443, "/frame", ssl=True
+    )
+    aioclient_mock.get("https://frame.example.org:8443/frame/api/health", json=health_payload())
+    await client.async_get_health()
+    assert client.base_url == "https://frame.example.org:8443/frame"
+
+
+async def test_certificate_failure_is_a_distinct_connection_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A TLS failure is still a connection error, but one the flow can explain."""
+    aioclient_mock.get(
+        f"{BASE}/api/health",
+        exc=aiohttp.ClientConnectorCertificateError(
+            MagicMock(), ssl.SSLCertVerificationError("self-signed certificate")
+        ),
+    )
+    with pytest.raises(SmartFrameSslError):
+        await _client(hass).async_get_health()
+    assert issubclass(SmartFrameSslError, SmartFrameConnectionError)
 
 
 async def test_base_url_at_root(hass: HomeAssistant) -> None:

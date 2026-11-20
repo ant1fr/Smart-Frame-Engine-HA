@@ -17,7 +17,7 @@ Official Home Assistant custom integration (`smart_frame_engine`) for **Smart Fr
 - `custom_components/smart_frame_engine/api.py` — Async aiohttp client (`async_get_clientsession`, never raw `ClientSession`)
 - `custom_components/smart_frame_engine/binary_sensor.py` — Engine connectivity & health status
 - `custom_components/smart_frame_engine/button.py` — Force refresh / wake-up triggers
-- `custom_components/smart_frame_engine/config_flow.py` — Zeroconf discovery, manual setup, auth detection, `OptionsFlow`
+- `custom_components/smart_frame_engine/config_flow.py` — Zeroconf discovery, manual setup (host, pasted URL, optional HTTPS and certificate check), auth detection, `OptionsFlow`
 - `custom_components/smart_frame_engine/const.py` — Domain constants, `SUPPORTED_API_VERSION`, capability flag keys
 - `custom_components/smart_frame_engine/coordinator.py` — `DataUpdateCoordinator` + API version compatibility & Repair issues
 - `custom_components/smart_frame_engine/diagnostics.py` — Redacted diagnostic download (`async_redact_data`)

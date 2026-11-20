@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import ssl
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
 from homeassistant.config_entries import SOURCE_USER, SOURCE_ZEROCONF
-from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PORT
+from homeassistant.const import CONF_API_KEY, CONF_HOST, CONF_PORT, CONF_SSL, CONF_VERIFY_SSL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import pytest
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
+from custom_components.smart_frame_engine.config_flow import _parse_address
 from custom_components.smart_frame_engine.const import (
     CONF_PATH,
     CONF_SCAN_INTERVAL,
@@ -65,7 +68,13 @@ async def test_user_flow_open(
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == INSTANCE_NAME
-    assert result["data"] == {CONF_HOST: HOST, CONF_PORT: PORT, CONF_PATH: "/"}
+    assert result["data"] == {
+        CONF_HOST: HOST,
+        CONF_PORT: PORT,
+        CONF_PATH: "/",
+        CONF_SSL: False,
+        CONF_VERIFY_SSL: True,
+    }
     assert result["result"].unique_id == INSTANCE_ID
     assert len(mock_setup_entry.mock_calls) == 1
 
@@ -189,6 +198,198 @@ async def test_user_flow_duplicate_updates_address(
     assert len(hass.config_entries.async_entries(DOMAIN)) == 1
 
 
+# -- HTTPS / pasted addresses ------------------------------------------------------------
+
+HTTPS_HOST = "frame.example.org"
+HTTPS_BASE = f"https://{HTTPS_HOST}"
+
+
+async def _submit(hass: HomeAssistant, user_input: dict[str, Any]) -> dict[str, Any]:
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    return await hass.config_entries.flow.async_configure(result["flow_id"], user_input)
+
+
+@pytest.mark.parametrize(
+    ("typed", "port", "ssl", "expected"),
+    [
+        ("192.168.1.50", 8080, False, ("192.168.1.50", 8080, False, "/")),
+        ("  engine.local ", 8080, False, ("engine.local", 8080, False, "/")),
+        ("engine.local", 8080, True, ("engine.local", 8080, True, "/")),
+        ("engine.local:9000", 8080, False, ("engine.local", 9000, False, "/")),
+        ("2001:db8::1", 8080, False, ("2001:db8::1", 8080, False, "/")),
+        ("[2001:db8::1]:9000", 8080, False, ("2001:db8::1", 9000, False, "/")),
+        # a scheme decides ssl, and the port field is only kept when the user changed it
+        ("https://frame.example.org", 443, False, ("frame.example.org", 443, True, "/")),
+        ("https://frame.example.org", 8080, False, ("frame.example.org", 443, True, "/")),
+        ("https://frame.example.org", 8443, False, ("frame.example.org", 8443, True, "/")),
+        ("https://frame.example.org:9443/", 8080, False, ("frame.example.org", 9443, True, "/")),
+        ("http://frame.example.org", 8080, True, ("frame.example.org", 80, False, "/")),
+        ("http://192.168.1.20:8080", 8080, True, ("192.168.1.20", 8080, False, "/")),
+        ("HTTPS://Frame.Example.org", 443, False, ("frame.example.org", 443, True, "/")),
+        # a path becomes ROOT_PATH, a query or fragment is ignored
+        ("https://example.org/frame", 443, False, ("example.org", 443, True, "/frame")),
+        ("https://example.org/frame/?a=1#b", 443, False, ("example.org", 443, True, "/frame/")),
+        ("example.org/frame", 8080, False, ("example.org", 8080, False, "/frame")),
+    ],
+)
+def test_parse_address(typed: str, port: int, ssl: bool, expected: tuple[Any, ...]) -> None:
+    """Hosts, IPs and pasted URLs are all understood."""
+    assert _parse_address(typed, port, ssl) == expected
+
+
+@pytest.mark.parametrize(
+    "typed", ["", "   ", "http://", "https://:443", "ftp://frame.example.org", "bad host", "a b"]
+)
+def test_parse_address_rejects_what_has_no_host(typed: str) -> None:
+    """Nothing usable as a host is an error the flow can report."""
+    with pytest.raises(ValueError, match="invalid host"):
+        _parse_address(typed, 8080, False)
+
+
+async def test_user_flow_https_address(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Pasting https://host with port 443 reaches the engine over HTTPS (the reported case)."""
+    aioclient_mock.get(f"{HTTPS_BASE}/api/health", json=health_payload())
+
+    result = await _submit(hass, {CONF_HOST: HTTPS_BASE, CONF_PORT: 443})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {
+        CONF_HOST: HTTPS_HOST,
+        CONF_PORT: 443,
+        CONF_PATH: "/",
+        CONF_SSL: True,
+        CONF_VERIFY_SSL: True,
+    }
+    assert str(aioclient_mock.mock_calls[0][1]) == f"{HTTPS_BASE}/api/health"
+
+
+async def test_user_flow_https_toggle_with_plain_host(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """The 'Use HTTPS' switch works without typing a scheme."""
+    aioclient_mock.get(f"{HTTPS_BASE}/api/health", json=health_payload())
+
+    result = await _submit(hass, {CONF_HOST: HTTPS_HOST, CONF_PORT: 443, CONF_SSL: True})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_SSL] is True
+    assert result["data"][CONF_HOST] == HTTPS_HOST
+
+
+async def test_user_flow_https_with_root_path(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """An address with a path is stored as the engine's ROOT_PATH."""
+    aioclient_mock.get(f"{HTTPS_BASE}/frame/api/health", json=health_payload())
+
+    result = await _submit(hass, {CONF_HOST: f"{HTTPS_BASE}/frame", CONF_PORT: 443})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_PATH] == "/frame"
+
+
+@pytest.mark.parametrize("typed", ["", "http://", "ftp://frame.example.org", "bad host"])
+async def test_user_flow_invalid_host(hass: HomeAssistant, typed: str) -> None:
+    """A host that cannot be read is reported as such, not as 'unknown'."""
+    result = await _submit(hass, {CONF_HOST: typed, CONF_PORT: PORT})
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_host"}
+
+
+async def test_user_flow_certificate_error_then_unverified(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A certificate that cannot be verified has its own message; turning the check off works."""
+    aioclient_mock.get(
+        f"{HTTPS_BASE}/api/health",
+        exc=aiohttp.ClientConnectorCertificateError(
+            MagicMock(), ssl.SSLCertVerificationError("self-signed certificate")
+        ),
+    )
+    result = await _submit(hass, {CONF_HOST: HTTPS_BASE, CONF_PORT: 443})
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "ssl_error"}
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.get(f"{HTTPS_BASE}/api/health", json=health_payload())
+    with patch(
+        "custom_components.smart_frame_engine.config_flow.async_get_clientsession",
+        wraps=async_get_clientsession,
+    ) as get_session:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_HOST: HTTPS_BASE, CONF_PORT: 443, CONF_SSL: True, CONF_VERIFY_SSL: False},
+        )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_VERIFY_SSL] is False
+    assert get_session.call_args.kwargs == {"verify_ssl": False}
+
+
+async def test_user_flow_https_key_step_uses_https(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """The API key is validated over the same HTTPS address."""
+    aioclient_mock.get(f"{HTTPS_BASE}/api/health", json=health_payload(auth="key"))
+    aioclient_mock.get(f"{HTTPS_BASE}/api/config", json=config_payload())
+
+    result = await _submit(hass, {CONF_HOST: HTTPS_BASE, CONF_PORT: 443})
+    assert result["step_id"] == "auth"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_API_KEY: API_KEY}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_API_KEY] == API_KEY
+    assert result["data"][CONF_SSL] is True
+    assert str(aioclient_mock.mock_calls[-1][1]) == f"{HTTPS_BASE}/api/config"
+
+
+async def test_user_flow_duplicate_switches_known_engine_to_https(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Adding a known engine again through its HTTPS address updates the entry."""
+    entry = make_entry()
+    entry.add_to_hass(hass)
+    aioclient_mock.get(f"{HTTPS_BASE}/api/health", json=health_payload())
+
+    result = await _submit(hass, {CONF_HOST: HTTPS_BASE, CONF_PORT: 443})
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.data[CONF_HOST] == HTTPS_HOST
+    assert entry.data[CONF_PORT] == 443
+    assert entry.data[CONF_SSL] is True
+
+
+async def test_reauth_uses_https_and_certificate_setting(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Reauthentication talks to an HTTPS engine the way it was set up."""
+    entry = make_entry(api_key="old-key", host=HTTPS_HOST)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, CONF_PORT: 443, CONF_SSL: True, CONF_VERIFY_SSL: False}
+    )
+    aioclient_mock.get(f"{HTTPS_BASE}/api/health", json=health_payload(auth="key"))
+    aioclient_mock.get(f"{HTTPS_BASE}/api/config", json=config_payload())
+
+    result = await entry.start_reauth_flow(hass)
+    with patch(
+        "custom_components.smart_frame_engine.config_flow.async_get_clientsession",
+        wraps=async_get_clientsession,
+    ) as get_session:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_API_KEY: API_KEY}
+        )
+
+    assert result["reason"] == "reauth_successful"
+    assert str(aioclient_mock.mock_calls[-1][1]) == f"{HTTPS_BASE}/api/config"
+    assert get_session.call_args.kwargs == {"verify_ssl": False}
+
+
 # -- Zeroconf --------------------------------------------------------------------------
 
 
@@ -211,7 +412,13 @@ async def test_zeroconf_open(
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == INSTANCE_NAME
-    assert result["data"] == {CONF_HOST: HOST, CONF_PORT: PORT, CONF_PATH: "/"}
+    assert result["data"] == {
+        CONF_HOST: HOST,
+        CONF_PORT: PORT,
+        CONF_PATH: "/",
+        CONF_SSL: False,
+        CONF_VERIFY_SSL: True,
+    }
     assert result["result"].unique_id == INSTANCE_ID
     assert len(mock_setup_entry.mock_calls) == 1
 
@@ -268,6 +475,25 @@ async def test_zeroconf_known_engine_updates_address_without_network(
     assert result["reason"] == "already_configured"
     assert entry.data[CONF_HOST] == HOST
     assert aioclient_mock.call_count == 0
+
+
+async def test_zeroconf_known_https_engine_gets_a_consistent_address(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A discovered LAN address replaces host, port and scheme together, never a mix."""
+    entry = make_entry(host=HTTPS_HOST)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, CONF_PORT: 443, CONF_SSL: True, CONF_VERIFY_SSL: False}
+    )
+
+    result = await _zeroconf(hass)
+
+    assert result["reason"] == "already_configured"
+    assert entry.data[CONF_HOST] == HOST
+    assert entry.data[CONF_PORT] == PORT
+    assert entry.data[CONF_SSL] is False
+    assert entry.data[CONF_VERIFY_SSL] is True
 
 
 @pytest.mark.parametrize(

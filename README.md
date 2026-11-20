@@ -38,6 +38,21 @@ Custom [Home Assistant](https://www.home-assistant.io/) integration for
 Copy `custom_components/smart_frame_engine` into the `custom_components` folder of your Home
 Assistant configuration directory and restart Home Assistant.
 
+### Reaching the engine over HTTPS (reverse proxy)
+
+On the manual setup form you can type a host name or IP address and a port, or paste the address
+of the engine as you open it in a browser:
+
+| You type | Result |
+| --- | --- |
+| `192.168.1.50` with port `8080` | `http://192.168.1.50:8080` |
+| `https://frame.example.org` | `https://frame.example.org` (port 443) |
+| `https://frame.example.org:8443` | `https://frame.example.org:8443` |
+| `https://example.org/frame` | `https://example.org/frame` (the engine's `ROOT_PATH`) |
+
+You can also turn on **Use HTTPS** next to a plain host name. If the engine's certificate is
+self-signed, the form says so: turn off **Verify the certificate** for that engine only.
+
 ## What you get
 
 Everything is grouped under one device per engine. Entities that depend on an optional engine
