@@ -136,7 +136,7 @@ SENSORS: tuple[SmartFrameSensorDescription, ...] = (
         key="engine_version",
         translation_key="engine_version",
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda d: d.health.version,
+        value_fn=lambda d: d.engine_version,
     ),
     SmartFrameSensorDescription(
         key="active_source",

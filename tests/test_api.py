@@ -50,9 +50,9 @@ def _last_call(mock: AiohttpClientMocker) -> tuple[str, Any, Any, Any]:
 
 
 def test_supported_version_and_capability_flags() -> None:
-    """The client speaks contract 1 and knows all 18 flags of API_CONTRACT.md."""
+    """The client speaks contract 1 and knows all 19 flags of API_CONTRACT.md."""
     assert SUPPORTED_API_VERSION == 1
-    assert len(ALL_CAPABILITIES) == 18
+    assert len(ALL_CAPABILITIES) == 19
     assert {
         "activity_log",
         "ambient_context",
@@ -70,6 +70,7 @@ def test_supported_version_and_capability_flags() -> None:
         "random_discovery",
         "smart_mix",
         "smart_mix_context",
+        "smart_mix_kinds",
         "title_card",
         "upload_image",
     } == ALL_CAPABILITIES
@@ -115,7 +116,7 @@ async def test_health_parsing(hass: HomeAssistant, aioclient_mock: AiohttpClient
 
     health = await _client(hass).async_get_health()
 
-    assert health.version == "1.0.0rc2"
+    assert health.version == "1.0.0rc3"
     assert health.api_version == 1
     assert health.min_api_version == 1
     assert health.auth == "key"
@@ -129,7 +130,7 @@ async def test_health_parsing(hass: HomeAssistant, aioclient_mock: AiohttpClient
 async def test_health_without_instance_id(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
-    """An engine older than 1.0.0rc2 simply has no instance id."""
+    """An engine older than 1.0.0rc3 simply has no instance id."""
     aioclient_mock.get(
         f"{BASE}/api/health", json=health_payload(instance_id=None, instance_name=None)
     )
@@ -292,7 +293,8 @@ async def test_status_parsing(hass: HomeAssistant, aioclient_mock: AiohttpClient
     aioclient_mock.get(f"{BASE}/api/status", json=status_payload())
     status = await _client(hass).async_get_status()
 
-    assert status.version == "1.0.0rc2"
+    assert status.version == "1.0.0rc3"
+    assert status.release == "1.0.0-rc.3"
     assert status.uptime_s == 1234.5
     assert status.current_image is not None
     assert status.current_image.source == "immich"

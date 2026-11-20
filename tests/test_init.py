@@ -76,7 +76,7 @@ async def test_setup_and_unload(hass: HomeAssistant, aioclient_mock: AiohttpClie
     coordinator: SmartFrameCoordinator = entry.runtime_data
     assert coordinator.capabilities == ALL_CAPABILITIES
     assert coordinator.data.health.instance_id == INSTANCE_ID
-    assert coordinator.data.status.version == "1.0.0rc2"
+    assert coordinator.data.status.version == "1.0.0rc3"
     assert coordinator.data.ambient is not None
     assert coordinator.data.ambient.family_active is True
     assert _issue(hass, entry.entry_id) is None
@@ -237,7 +237,7 @@ async def test_incompatible_engine_creates_repair_issue(
     assert issue.is_fixable is False
     assert issue.translation_placeholders == {
         "name": entry.title,
-        "server_version": "1.0.0rc2",
+        "server_version": "1.0.0rc3",
         "api_version": str(api_version),
         "min_api_version": str(min_api_version),
         "supported_version": "1",

@@ -35,7 +35,7 @@ def health_payload(
     capabilities: set[str] | frozenset[str] | None = None,
     instance_id: str | None = INSTANCE_ID,
     instance_name: str | None = INSTANCE_NAME,
-    version: str = "1.0.0rc2",
+    version: str = "1.0.0rc3",
 ) -> dict[str, Any]:
     """Return a ``GET /api/health`` body; ``instance_id=None`` mimics an rc.1 engine."""
     payload: dict[str, Any] = {
@@ -56,7 +56,8 @@ def health_payload(
 def status_payload() -> dict[str, Any]:
     """Return a ``GET /api/status`` body."""
     return {
-        "version": "1.0.0rc2",
+        "version": "1.0.0rc3",
+        "release": "1.0.0-rc.3",
         "uptime_s": 1234.5,
         "auth_enabled": False,
         "auth_mode": "open",
@@ -236,7 +237,7 @@ def zeroconf_info(
 ) -> ZeroconfServiceInfo:
     """Return a discovery record of ``_smartframe._tcp.local.``."""
     properties: dict[str, str | None] = {
-        "version": "1.0.0rc2",
+        "version": "1.0.0rc3",
         "api_version": api_version,
         "min_api_version": min_api_version,
         "path": path,

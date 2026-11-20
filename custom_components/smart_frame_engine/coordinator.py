@@ -66,6 +66,11 @@ class SmartFrameData:
     # ``None`` when the engine does not advertise the ``family_mode`` capability.
     config: ConfigView | None = None
 
+    @property
+    def engine_version(self) -> str:
+        """The version to show: the tag spelling (contract v1.2) when known, else PEP 440."""
+        return self.status.release or self.health.version
+
 
 SmartFrameConfigEntry = ConfigEntry["SmartFrameCoordinator"]
 
@@ -119,7 +124,7 @@ class SmartFrameCoordinator(DataUpdateCoordinator[SmartFrameData]):
             name=(health.instance_name if health else None) or self.config_entry.title,
             manufacturer=MANUFACTURER,
             model=MODEL,
-            sw_version=health.version if health else None,
+            sw_version=self.data.engine_version if self.data else None,
             configuration_url=self.client.base_url,
         )
 

@@ -499,6 +499,9 @@ class EngineStatus:
     scheduler: SchedulerState
     immich_configured: bool
     tmdb_configured: bool
+    # Contract v1.2 (display only): the version spelled like the git/Docker tag, e.g.
+    # ``1.0.0-rc.3``. ``None`` on engines older than 1.0.0rc3.
+    release: str | None = None
 
     @classmethod
     def from_dict(cls, data: Any) -> EngineStatus:
@@ -518,6 +521,7 @@ class EngineStatus:
             scheduler=SchedulerState.from_dict(_mapping(data.get("scheduler"))),
             immich_configured=_bool(services.get("immich")),
             tmdb_configured=_bool(services.get("tmdb")),
+            release=_str(data.get("release")) or None,
         )
 
 

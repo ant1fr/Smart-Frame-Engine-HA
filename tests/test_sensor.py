@@ -28,7 +28,7 @@ async def test_values(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) 
     """Each sensor reports the documented field."""
     await setup_engine(hass, aioclient_mock)
 
-    assert _state(hass, "engine_version").state == "1.0.0rc2"
+    assert _state(hass, "engine_version").state == "1.0.0-rc.3"
     assert _state(hass, "active_source").state == "immich"
     assert _state(hass, "media_title").state == "Summer 2024"
     assert _state(hass, "refresh_rule").state == "smart_mix"
@@ -37,6 +37,18 @@ async def test_values(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) 
     assert _state(hass, "frame_battery").state == "80.0"
     assert _state(hass, "frame_battery").attributes["device_class"] == "battery"
     assert _state(hass, "frame_battery").attributes["unit_of_measurement"] == "%"
+
+
+async def test_engine_version_falls_back_before_rc3(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Engines older than 1.0.0rc3 send no ``release``: show the PEP 440 version instead."""
+    status = status_payload()
+    del status["release"]
+    entry = await setup_engine(hass, aioclient_mock, status=status)
+
+    assert entry.runtime_data.data.status.release is None
+    assert _state(hass, "engine_version").state == "1.0.0rc3"
 
 
 async def test_refresh_rule_is_an_enum(

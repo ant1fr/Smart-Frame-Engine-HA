@@ -32,6 +32,6 @@ async def test_entity_shares_the_engine_device(
     assert info["identifiers"] == {(DOMAIN, INSTANCE_ID)}
     assert info["name"] == INSTANCE_NAME
     assert info["manufacturer"] == "Smart Frame Engine"
-    assert info["sw_version"] == "1.0.0rc2"
+    assert info["sw_version"] == "1.0.0-rc.3"
     assert info["configuration_url"] == "http://192.168.1.50:8080/"
     assert entity.available is True

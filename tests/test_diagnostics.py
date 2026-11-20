@@ -46,7 +46,7 @@ async def test_diagnostics_redacts_the_api_key(
     assert diagnostics["health"]["auth"] == "key"
     assert diagnostics["health"]["api_version"] == 1
     assert diagnostics["health"]["instance_id"] == INSTANCE_ID
-    assert diagnostics["status"]["version"] == "1.0.0rc2"
+    assert diagnostics["status"]["version"] == "1.0.0rc3"
     assert diagnostics["ambient"]["family_active"] is True
     assert diagnostics["coordinator"]["last_update_success"] is True
 
