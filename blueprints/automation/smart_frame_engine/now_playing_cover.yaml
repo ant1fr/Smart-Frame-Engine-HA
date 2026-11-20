@@ -1,0 +1,143 @@
+blueprint:
+  name: Smart Frame Engine - Show the album cover of the music playing
+  description: >-
+    Shows the cover of the track that a media player is playing, with the artist and album, and
+    puts the previous image back when the track should be over.
+
+
+    The cover of the media player is sent to the engine and tried first. If it is missing or
+    unusable, the engine looks one up itself (Deezer, then MusicBrainz / Cover Art Archive).
+    Turn off "Send the player's cover" to always let the engine look it up. The picture of a
+    media player is a Home Assistant address, so the engine must be able to reach Home
+    Assistant's internal URL (Settings > System > Network).
+
+
+    Sending the same album again only extends its time on the frame, so it is safe that this
+    runs on every track change.
+  domain: automation
+  source_url: https://github.com/ant1fr/Smart-Frame-Engine-HA/blob/main/blueprints/automation/smart_frame_engine/now_playing_cover.yaml
+  author: ant1fr
+  homeassistant:
+    min_version: 2026.1.0
+  input:
+    media_player:
+      name: Media player
+      description: The player whose music is shown.
+      selector:
+        entity:
+          filter:
+            domain: media_player
+    send_artwork:
+      name: Send the player's cover
+      description: >-
+        On: the player's cover is tried first, and the engine's lookup is the safety net. Off:
+        the engine always looks the cover up itself.
+      default: true
+      selector:
+        boolean:
+    style:
+      name: Style
+      default: ""
+      selector:
+        select:
+          options:
+            - label: Engine default
+              value: ""
+            - label: Sleeve
+              value: sleeve
+            - label: Vinyl record
+              value: vinyl
+    show_title:
+      name: Print the track title
+      description: >-
+        Without the title, every track of the same album shares one picture, so the frame is
+        only refreshed when the album changes.
+      default: ""
+      selector:
+        select:
+          options:
+            - label: Engine default
+              value: ""
+            - label: "Yes"
+              value: "yes"
+            - label: "No"
+              value: "no"
+    hold_minutes:
+      name: Protect from refresh
+      description: >-
+        Minutes during which scheduled refreshes will not replace the cover. 0 means the
+        engine's default.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    ttl_seconds:
+      name: Duration
+      description: >-
+        Seconds before the previous image returns. 0 means it is worked out from the length of
+        the track.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 86400
+          mode: box
+          unit_of_measurement: s
+    engine:
+      name: Smart Frame Engine
+      description: Only needed when you have several engines. Leave empty otherwise.
+      default: ""
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+
+# The latest track wins.
+mode: restart
+max_exceeded: silent
+
+variables:
+  media_player: !input media_player
+  send_artwork: !input send_artwork
+  style: !input style
+  show_title: !input show_title
+  hold_minutes: !input hold_minutes
+  ttl_seconds: !input ttl_seconds
+  engine: !input engine
+
+triggers:
+  - trigger: state
+    entity_id: !input media_player
+    to: playing
+    id: started
+  # Changes while playing. Position updates are not listened to: they come every few seconds.
+  - trigger: state
+    entity_id: !input media_player
+    attribute: media_title
+    id: title
+
+conditions:
+  - condition: template
+    value_template: "{{ is_state(media_player, 'playing') }}"
+  # Starting playback with a new title fires both triggers: count it once, as 'started'.
+  - condition: template
+    value_template: "{{ trigger.id == 'started' or trigger.from_state.state == 'playing' }}"
+  # Radio streams and some sources report no artist: there is nothing to show then.
+  - condition: template
+    value_template: "{{ (state_attr(media_player, 'media_artist') or '') | string | trim != '' }}"
+
+actions:
+  - alias: Show the cover
+    action: smart_frame_engine.show_now_playing
+    data: >-
+      {{ dict({
+        'config_entry_id': engine,
+        'media_player': media_player,
+        'use_media_player_picture': send_artwork,
+        'style': style,
+        'show_title': ((show_title == 'yes') if show_title else none),
+        'hold_minutes': hold_minutes or none,
+        'ttl_seconds': ttl_seconds or none,
+      }.items() | rejectattr('1', 'in', ['', none]) | list) }}

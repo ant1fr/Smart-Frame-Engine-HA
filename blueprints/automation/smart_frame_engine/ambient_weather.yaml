@@ -1,0 +1,77 @@
+blueprint:
+  name: Smart Frame Engine - Tell the frame about the weather
+  description: >-
+    Keeps the weather of a weather entity in the ambient context of Smart Frame Engine, so the
+    engine can favour fitting pictures.
+
+
+    The weather is sent when it changes, when Home Assistant starts, and every 30 minutes. Each
+    value expires on its own after the lifetime below, so the engine forgets it if Home Assistant
+    stops updating it. The weather entity's condition is sent as is (for example `rainy`,
+    `sunny` or `clear-night`).
+  domain: automation
+  source_url: https://github.com/ant1fr/Smart-Frame-Engine-HA/blob/main/blueprints/automation/smart_frame_engine/ambient_weather.yaml
+  author: ant1fr
+  homeassistant:
+    min_version: 2026.1.0
+  input:
+    weather_entity:
+      name: Weather entity
+      selector:
+        entity:
+          filter:
+            domain: weather
+    ttl_minutes:
+      name: Lifetime
+      description: >-
+        How long the engine keeps the weather without an update, in minutes. It is renewed every
+        30 minutes, so keep this above 30.
+      default: 180
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    engine:
+      name: Smart Frame Engine
+      description: Only needed when you have several engines. Leave empty otherwise.
+      default: ""
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+
+mode: restart
+max_exceeded: silent
+
+variables:
+  weather_entity: !input weather_entity
+  ttl_minutes: !input ttl_minutes
+  engine: !input engine
+
+triggers:
+  - trigger: state
+    entity_id: !input weather_entity
+    # Only the condition: temperature and other attributes change all the time.
+    to: null
+    id: changed
+  - trigger: homeassistant
+    event: start
+    id: started
+  - trigger: time_pattern
+    minutes: "/30"
+    id: renew
+
+conditions:
+  - condition: template
+    value_template: "{{ states(weather_entity) not in ['unknown', 'unavailable'] }}"
+
+actions:
+  - alias: Tell the engine about the weather
+    action: smart_frame_engine.set_ambient_context
+    data: >-
+      {{ dict({
+        'config_entry_id': engine,
+        'weather': states(weather_entity),
+        'ttl_minutes': ttl_minutes,
+      }.items() | rejectattr('1', 'in', ['', none]) | list) }}

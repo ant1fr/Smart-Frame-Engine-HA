@@ -129,3 +129,182 @@ send_title_card:
       default: true
       selector:
         boolean:
+
+show_now_playing:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+    media_player:
+      required: false
+      selector:
+        entity:
+          filter:
+            domain: media_player
+    use_media_player_picture:
+      required: false
+      default: true
+      selector:
+        boolean:
+    artist:
+      required: false
+      example: Daft Punk
+      selector:
+        text:
+    album:
+      required: false
+      example: Discovery
+      selector:
+        text:
+    title:
+      required: false
+      example: One More Time
+      selector:
+        text:
+    artwork_url:
+      required: false
+      selector:
+        text:
+    duration_seconds:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 86400
+          mode: box
+          unit_of_measurement: s
+    position_seconds:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 86400
+          mode: box
+          unit_of_measurement: s
+    enrich_artwork:
+      required: false
+      default: true
+      selector:
+        boolean:
+    ephemeral:
+      required: false
+      default: true
+      selector:
+        boolean:
+    hold_minutes:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    push_to_fraimic:
+      required: false
+      default: true
+      selector:
+        boolean:
+    show_title:
+      required: false
+      selector:
+        boolean:
+    style:
+      required: false
+      selector:
+        select:
+          options:
+            - sleeve
+            - vinyl
+          translation_key: music_style
+    ttl_seconds:
+      required: false
+      selector:
+        number:
+          min: 10
+          max: 86400
+          mode: box
+          unit_of_measurement: s
+
+show_media_poster:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+    media_player:
+      required: false
+      selector:
+        entity:
+          filter:
+            domain: media_player
+    use_media_player_picture:
+      required: false
+      default: true
+      selector:
+        boolean:
+    query:
+      required: false
+      example: Blade Runner
+      selector:
+        text:
+    media_type:
+      required: false
+      selector:
+        select:
+          options:
+            - movie
+            - tv
+            - multi
+          translation_key: media_type
+    season:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: box
+    year:
+      required: false
+      selector:
+        number:
+          min: 1870
+          max: 2200
+          mode: box
+    language:
+      required: false
+      example: fr-CA
+      selector:
+        text:
+    fallback_url:
+      required: false
+      selector:
+        text:
+    ephemeral:
+      required: false
+      default: true
+      selector:
+        boolean:
+    ttl_minutes:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 1440
+          mode: box
+          unit_of_measurement: min
+    hold_minutes:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    push_to_fraimic:
+      required: false
+      default: true
+      selector:
+        boolean:

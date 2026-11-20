@@ -4,8 +4,9 @@ Custom [Home Assistant](https://www.home-assistant.io/) integration for
 [Smart Frame Engine](https://github.com/ant1fr/Smart-Frame-Engine), installable through
 [HACS](https://hacs.xyz/) or manually.
 
-> **Status:** work in progress. Discovery, setup, authentication, compatibility checks, entities
-> and services are in place; blueprints follow in a later milestone.
+> **Status:** work in progress. Discovery, setup, authentication, compatibility checks, entities,
+> services and blueprints are in place. It has been tested against the engine's API contract
+> (v1.2), not yet against a real engine.
 
 ## Requirements
 
@@ -62,8 +63,53 @@ data:
   ttl_minutes: 120
 ```
 
+- `smart_frame_engine.show_now_playing` (needs `now_playing`): shows the album cover of the music
+  playing. Pass a `media_player` and the artist, album, title, position and cover are read from it;
+  anything you set yourself wins. Other fields: `artist`, `album`, `title`, `artwork_url`,
+  `duration_seconds`, `position_seconds`, `style` (`sleeve` or `vinyl`), `show_title`,
+  `enrich_artwork`, `ephemeral`, `ttl_seconds`, `hold_minutes`, `push_to_fraimic`.
+- `smart_frame_engine.show_media_poster` (needs `display_tmdb`): finds a movie or series on TMDB
+  and shows its poster. Pass a `media_player` and the title, type (movie or series) and season are
+  read from it. Other fields: `query`, `media_type`, `season`, `year`, `language`, `fallback_url`,
+  `ephemeral`, `ttl_minutes` (1 to 1440), `hold_minutes`, `push_to_fraimic`.
+
+```yaml
+action: smart_frame_engine.show_now_playing
+data:
+  media_player: media_player.kitchen
+```
+
 A service called on an engine that lacks the capability fails with a clear message instead of
 sending a request.
+
+### Where the picture comes from
+
+- **Album covers:** the cover of the media player is sent to the engine and **tried first**. If it
+  is missing or unusable, the engine looks one up itself (Deezer, then MusicBrainz / Cover Art
+  Archive). Set `use_media_player_picture: false` to always let the engine look it up.
+- **Movie and series posters:** the engine looks the title up on TMDB, and the picture of the media
+  player is only the **fallback**, used when TMDB has no match.
+- The picture of a media player is a Home Assistant address, so the engine must be able to reach
+  Home Assistant's **internal URL** (Settings > System > Network). Without an internal URL no
+  picture is sent, and the engine's own lookup applies.
+
+## Blueprints
+
+Ready-to-use automations are in [`blueprints/automation/smart_frame_engine`](blueprints/automation/smart_frame_engine).
+HACS does not install blueprints: import each one with its button (Settings > Automations >
+Blueprints), or copy the files into `config/blueprints/automation/smart_frame_engine/`.
+
+| Blueprint | What it does | Import |
+| --- | --- | --- |
+| `ambient_weather.yaml` | Tells the engine about the weather of a weather entity | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fant1fr%2FSmart-Frame-Engine-HA%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fsmart_frame_engine%2Fambient_weather.yaml) |
+| `ambient_presence.yaml` | Tells the engine which people are home | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fant1fr%2FSmart-Frame-Engine-HA%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fsmart_frame_engine%2Fambient_presence.yaml) |
+| `title_card.yaml` | Shows a text card when your trigger fires | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fant1fr%2FSmart-Frame-Engine-HA%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fsmart_frame_engine%2Ftitle_card.yaml) |
+| `now_playing_cover.yaml` | Shows the album cover of the music playing | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fant1fr%2FSmart-Frame-Engine-HA%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fsmart_frame_engine%2Fnow_playing_cover.yaml) |
+| `tv_poster.yaml` | Shows the poster of the movie or series playing | [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fant1fr%2FSmart-Frame-Engine-HA%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fsmart_frame_engine%2Ftv_poster.yaml) |
+
+The weather and presence blueprints re-send their value every 30 minutes, and each value expires
+on its own after its lifetime, so the engine forgets it if Home Assistant stops updating it. Every
+blueprint has an optional engine input, only needed when you have several engines.
 
 ## License
 
