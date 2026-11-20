@@ -12,7 +12,7 @@ Custom [Home Assistant](https://www.home-assistant.io/) integration for
 
 [![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ant1fr&repository=Smart-Frame-Engine-HA&category=integration)
 
-> **Status:** version 1.0.0. Discovery, setup, authentication, compatibility checks, entities,
+> **Status:** version 1.0.1. Discovery, setup, authentication, compatibility checks, entities,
 > services and blueprints are in place and covered by automated tests that replay the engine's API
 > contract (v1.2). It has **not yet been run against a real engine**: if something behaves
 > differently from what is described here, please
