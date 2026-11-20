@@ -4,14 +4,18 @@
     "step": {
       "user": {
         "title": "Se connecter à Smart Frame Engine",
-        "description": "Saisissez l'adresse de votre Smart Frame Engine. Le port de l'API est 8080, sauf si vous l'avez modifié.",
+        "description": "Saisissez l'adresse de votre Smart Frame Engine. Vous pouvez coller son adresse web (par exemple https://frame.exemple.fr). Le port de l'API est 8080, sauf si vous l'avez modifié, ou 443 derrière un reverse proxy HTTPS.",
         "data": {
           "host": "Hôte",
-          "port": "Port"
+          "port": "Port",
+          "ssl": "Utiliser HTTPS",
+          "verify_ssl": "Vérifier le certificat"
         },
         "data_description": {
-          "host": "Nom d'hôte ou adresse IP de la machine qui exécute Smart Frame Engine.",
-          "port": "Port du serveur web de Smart Frame Engine."
+          "host": "Nom d'hôte ou adresse IP de la machine qui exécute Smart Frame Engine. Une adresse complète comme https://frame.exemple.fr fonctionne aussi.",
+          "port": "Port du serveur web de Smart Frame Engine (443 pour une adresse HTTPS habituelle).",
+          "ssl": "À activer si le moteur est joint en HTTPS, par exemple derrière un reverse proxy. Une adresse qui commence par https:// l'active automatiquement.",
+          "verify_ssl": "À désactiver uniquement si le moteur utilise un certificat auto-signé."
         }
       },
       "auth": {
@@ -48,6 +52,8 @@
     "error": {
       "cannot_connect": "Échec de la connexion",
       "invalid_auth": "Authentification invalide",
+      "invalid_host": "Saisissez un nom d'hôte, une adresse IP ou une adresse web",
+      "ssl_error": "La connexion sécurisée a échoué : le certificat n'a pas pu être vérifié. Vérifiez l'adresse, ou désactivez la vérification du certificat pour un certificat auto-signé.",
       "unknown": "Erreur inattendue"
     },
     "abort": {

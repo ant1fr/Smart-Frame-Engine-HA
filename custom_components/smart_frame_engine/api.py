@@ -41,6 +41,10 @@ class SmartFrameConnectionError(SmartFrameError):
     """The engine could not be reached, timed out, or did not answer like an engine."""
 
 
+class SmartFrameSslError(SmartFrameConnectionError):
+    """The TLS handshake failed (for example an untrusted or self-signed certificate)."""
+
+
 class SmartFrameAuthError(SmartFrameError):
     """HTTP 401: credentials are missing or wrong."""
 
@@ -742,11 +746,18 @@ class SmartFrameClient:
         port: int,
         path: str = DEFAULT_PATH,
         api_key: str | None = None,
+        *,
+        ssl: bool = False,
     ) -> None:
-        """Create a client bound to Home Assistant's shared ``session``."""
+        """Create a client bound to Home Assistant's shared ``session``.
+
+        ``ssl`` selects ``https``. Whether the certificate is verified is decided by the
+        ``session`` (see ``async_get_clientsession(hass, verify_ssl=...)``).
+        """
         self._session = session
         self._host = host
         self._port = port
+        self._scheme = "https" if ssl else "http"
         stripped = path.strip("/")
         self._base_path = f"/{stripped}" if stripped else ""
         self._api_key = api_key or None
@@ -765,12 +776,17 @@ class SmartFrameClient:
     def base_url(self) -> str:
         """Root URL of the engine, including its ``ROOT_PATH`` (used for the device link)."""
         return str(
-            URL.build(scheme="http", host=self._host, port=self._port, path=self._base_path or "/")
+            URL.build(
+                scheme=self._scheme, host=self._host, port=self._port, path=self._base_path or "/"
+            )
         )
 
     def _url(self, endpoint: str) -> URL:
         return URL.build(
-            scheme="http", host=self._host, port=self._port, path=f"{self._base_path}{endpoint}"
+            scheme=self._scheme,
+            host=self._host,
+            port=self._port,
+            path=f"{self._base_path}{endpoint}",
         )
 
     async def _request(
@@ -801,6 +817,8 @@ class SmartFrameClient:
                 status = response.status
         except TimeoutError as err:
             raise SmartFrameConnectionError(f"Timed out talking to {self._host}") from err
+        except aiohttp.ClientSSLError as err:
+            raise SmartFrameSslError(f"TLS error talking to {self._host}: {err}") from err
         except aiohttp.ClientError as err:
             raise SmartFrameConnectionError(f"Cannot reach {self._host}: {err}") from err
 

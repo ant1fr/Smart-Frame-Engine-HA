@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
+from unittest.mock import patch
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import CONF_PORT, CONF_SSL, CONF_VERIFY_SSL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 import pytest
@@ -97,6 +100,44 @@ async def test_capabilities_adapt_to_the_engine(
     assert coordinator.capabilities == {CAPABILITY_TITLE_CARD}
     assert coordinator.data.ambient is None
     assert all(call[1].path != "/api/context" for call in aioclient_mock.mock_calls)
+
+
+async def test_https_entry_is_polled_over_https(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """An entry with ssl=True talks https and passes its certificate setting to the session."""
+    base = "https://frame.example.org"
+    mock_engine(aioclient_mock, base=base)
+    entry = make_entry(host="frame.example.org")
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, CONF_PORT: 443, CONF_SSL: True, CONF_VERIFY_SSL: False}
+    )
+    with patch(
+        "custom_components.smart_frame_engine.async_get_clientsession",
+        wraps=async_get_clientsession,
+    ) as get_session:
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert get_session.call_args.kwargs == {"verify_ssl": False}
+    assert aioclient_mock.mock_calls
+    assert all(call[1].scheme == "https" for call in aioclient_mock.mock_calls)
+    assert entry.runtime_data.client.base_url == f"{base}/"
+
+
+async def test_entry_without_ssl_keys_stays_plain_http(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Entries created before HTTPS support have no ssl keys and keep working over http."""
+    mock_engine(aioclient_mock)
+    entry = make_entry()
+    assert CONF_SSL not in entry.data
+    await _setup(hass, entry)
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert all(call[1].scheme == "http" for call in aioclient_mock.mock_calls)
 
 
 async def test_key_is_sent_when_configured(
