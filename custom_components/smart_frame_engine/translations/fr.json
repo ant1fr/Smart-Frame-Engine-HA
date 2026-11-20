@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Se connecter à Smart Frame Engine",
-        "description": "Saisissez l'adresse de votre Smart Frame Engine. Vous pouvez coller son adresse web (par exemple https://frame.exemple.fr). Le port de l'API est 8080, sauf si vous l'avez modifié, ou 443 derrière un reverse proxy HTTPS.",
+        "description": "Saisissez l'adresse de votre Smart Frame Engine, ou collez son adresse web telle que vous l'ouvrez dans un navigateur. Le port de l'API est 8080, sauf si vous l'avez modifié, ou 443 derrière un reverse proxy HTTPS.",
         "data": {
           "host": "Hôte",
           "port": "Port",
@@ -12,9 +12,9 @@
           "verify_ssl": "Vérifier le certificat"
         },
         "data_description": {
-          "host": "Nom d'hôte ou adresse IP de la machine qui exécute Smart Frame Engine. Une adresse complète comme https://frame.exemple.fr fonctionne aussi.",
+          "host": "Nom d'hôte ou adresse IP de la machine qui exécute Smart Frame Engine. L'adresse web complète du moteur fonctionne aussi.",
           "port": "Port du serveur web de Smart Frame Engine (443 pour une adresse HTTPS habituelle).",
-          "ssl": "À activer si le moteur est joint en HTTPS, par exemple derrière un reverse proxy. Une adresse qui commence par https:// l'active automatiquement.",
+          "ssl": "À activer si le moteur est joint en HTTPS, par exemple derrière un reverse proxy. Une adresse web qui commence par le schéma sécurisé l'active automatiquement.",
           "verify_ssl": "À désactiver uniquement si le moteur utilise un certificat auto-signé."
         }
       },

@@ -168,3 +168,14 @@ def test_every_translation_key_used_in_code_exists() -> None:
     used |= {"incompatible_server", "incompatible_integration"}
     entity_keys = {k for platform in english["entity"].values() for k in platform}
     assert used - entity_keys <= known, sorted(used - entity_keys - known)
+
+
+@pytest.mark.parametrize("name", ["strings.json", "translations/en.json", "translations/fr.json"])
+def test_translations_contain_no_urls(name: str) -> None:
+    """hassfest rejects a literal URL in a translation string (use a placeholder instead)."""
+    offenders = {
+        key: text
+        for key, text in _leaves(_load(INTEGRATION / name)).items()
+        if isinstance(text, str) and re.search(r"https?://|www\.", text)
+    }
+    assert not offenders
