@@ -1,0 +1,123 @@
+blueprint:
+  name: Smart Frame Engine - Show a title card
+  description: >-
+    Shows a text card (a title with an optional subtitle and caption) on the frame whenever your
+    trigger fires, for example "Dinner is ready" or "The front door is open".
+
+
+    The title, subtitle and caption accept templates, for example
+    `{{ trigger.to_state.name }} is open`. Temporary cards give way to the previous image after
+    the duration below.
+  domain: automation
+  source_url: https://github.com/ant1fr/Smart-Frame-Engine-HA/blob/main/blueprints/automation/smart_frame_engine/title_card.yaml
+  author: ant1fr
+  homeassistant:
+    min_version: 2026.1.0
+  input:
+    trigger:
+      name: Trigger
+      description: What shows the card.
+      selector:
+        trigger:
+    title:
+      name: Title
+      description: Large centered text (up to 200 characters). Templates are allowed.
+      selector:
+        text:
+    subtitle:
+      name: Subtitle
+      description: Smaller text below the title (up to 200 characters). Templates are allowed.
+      default: ""
+      selector:
+        text:
+    caption:
+      name: Caption
+      description: Small text at the bottom (up to 200 characters). Templates are allowed.
+      default: ""
+      selector:
+        text:
+    accent:
+      name: Accent color
+      description: Color of the rule under the title.
+      default: red
+      selector:
+        select:
+          options:
+            - label: Red
+              value: red
+            - label: Yellow
+              value: yellow
+            - label: Blue
+              value: blue
+            - label: Green
+              value: green
+            - label: White
+              value: white
+    ephemeral:
+      name: Temporary
+      description: When on, the previous image comes back after the duration below.
+      default: true
+      selector:
+        boolean:
+    ttl_minutes:
+      name: Duration
+      description: Temporary cards only. Minutes before the previous image returns.
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    hold_minutes:
+      name: Protect from refresh
+      description: >-
+        Minutes during which scheduled refreshes will not replace the card. 0 means the engine's
+        default.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    engine:
+      name: Smart Frame Engine
+      description: Only needed when you have several engines. Leave empty otherwise.
+      default: ""
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+
+mode: queued
+max: 5
+max_exceeded: silent
+
+variables:
+  title: !input title
+  subtitle: !input subtitle
+  caption: !input caption
+  accent: !input accent
+  ephemeral: !input ephemeral
+  ttl_minutes: !input ttl_minutes
+  hold_minutes: !input hold_minutes
+  engine: !input engine
+
+triggers: !input trigger
+
+actions:
+  - alias: Show the card
+    action: smart_frame_engine.send_title_card
+    # Empty inputs are left out so the engine's defaults apply. The engine takes at most 200
+    # characters per text.
+    data: >-
+      {{ dict({
+        'config_entry_id': engine,
+        'title': (title | string)[:200],
+        'subtitle': (subtitle | string)[:200],
+        'caption': (caption | string)[:200],
+        'accent': accent,
+        'ephemeral': ephemeral,
+        'ttl_minutes': (ttl_minutes if ephemeral and ttl_minutes else none),
+        'hold_minutes': hold_minutes or none,
+      }.items() | rejectattr('1', 'in', ['', none]) | list) }}

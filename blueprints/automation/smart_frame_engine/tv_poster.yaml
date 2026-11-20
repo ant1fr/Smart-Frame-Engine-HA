@@ -1,0 +1,118 @@
+blueprint:
+  name: Smart Frame Engine - Show the poster of the movie or series playing
+  description: >-
+    Shows the poster of the movie or series that a media player (TV, Plex, Jellyfin, Kodi...) is
+    playing, and puts the previous image back after the duration below.
+
+
+    The engine finds the poster on TMDB. The picture of the media player is only used when TMDB
+    has no match (turn off "Use the player's picture as fallback" to never send it). It is a Home
+    Assistant address, so the engine must be able to reach Home Assistant's internal URL
+    (Settings > System > Network). For an episode, the poster of the series is shown, for the
+    season being played when the player reports it. Only movies, series and episodes are shown:
+    other kinds of video are ignored.
+  domain: automation
+  source_url: https://github.com/ant1fr/Smart-Frame-Engine-HA/blob/main/blueprints/automation/smart_frame_engine/tv_poster.yaml
+  author: ant1fr
+  homeassistant:
+    min_version: 2026.1.0
+  input:
+    media_player:
+      name: Media player
+      description: The player whose movie or series is shown.
+      selector:
+        entity:
+          filter:
+            domain: media_player
+    use_media_player_picture:
+      name: Use the player's picture as fallback
+      description: Sent to the engine and shown only when TMDB finds no poster.
+      default: true
+      selector:
+        boolean:
+    language:
+      name: Poster language
+      description: >-
+        For example fr or fr-CA. Leave empty to use the language set in the engine.
+      default: ""
+      selector:
+        text:
+    ttl_minutes:
+      name: Duration
+      description: >-
+        Minutes before the previous image returns (up to 1440). 0 means the engine's default.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 1440
+          mode: box
+          unit_of_measurement: min
+    hold_minutes:
+      name: Protect from refresh
+      description: >-
+        Minutes during which scheduled refreshes will not replace the poster. 0 means the
+        engine's default.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    engine:
+      name: Smart Frame Engine
+      description: Only needed when you have several engines. Leave empty otherwise.
+      default: ""
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+
+# The latest title wins.
+mode: restart
+max_exceeded: silent
+
+variables:
+  media_player: !input media_player
+  use_media_player_picture: !input use_media_player_picture
+  language: !input language
+  ttl_minutes: !input ttl_minutes
+  hold_minutes: !input hold_minutes
+  engine: !input engine
+
+triggers:
+  - trigger: state
+    entity_id: !input media_player
+    to: playing
+    id: started
+  - trigger: state
+    entity_id: !input media_player
+    attribute: media_title
+    id: title
+
+conditions:
+  - condition: template
+    value_template: "{{ is_state(media_player, 'playing') }}"
+  # Starting playback with a new title fires both triggers: count it once, as 'started'.
+  - condition: template
+    value_template: "{{ trigger.id == 'started' or trigger.from_state.state == 'playing' }}"
+  - condition: template
+    value_template: >-
+      {{ state_attr(media_player, 'media_content_type') in ['movie', 'tvshow', 'episode'] }}
+  - condition: template
+    value_template: >-
+      {{ (state_attr(media_player, 'media_series_title') or state_attr(media_player, 'media_title')
+         or '') | string | trim != '' }}
+
+actions:
+  - alias: Show the poster
+    action: smart_frame_engine.show_media_poster
+    data: >-
+      {{ dict({
+        'config_entry_id': engine,
+        'media_player': media_player,
+        'use_media_player_picture': use_media_player_picture,
+        'language': language | trim,
+        'ttl_minutes': ttl_minutes or none,
+        'hold_minutes': hold_minutes or none,
+      }.items() | rejectattr('1', 'in', ['', none]) | list) }}

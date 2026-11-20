@@ -25,12 +25,12 @@ Official Home Assistant custom integration (`smart_frame_engine`) for **Smart Fr
 - `custom_components/smart_frame_engine/image.py` — Live preview entity of currently rendered frame image
 - `custom_components/smart_frame_engine/manifest.json` — HA integration metadata (strict `hassfest` key sorting)
 - `custom_components/smart_frame_engine/sensor.py` — Active source/mode, media title, engine version, ambient context
-- `custom_components/smart_frame_engine/services.py` — Service handlers (capability-gated, `ServiceValidationError`), registered once from `async_setup`
+- `custom_components/smart_frame_engine/services.py` — Service handlers (ambient context, title card, album cover, poster; capability-gated, `ServiceValidationError`), registered once from `async_setup`. Album covers: the player's picture is tried first, then the engine's own lookup; TMDB posters: the player's picture is only the fallback
 - `custom_components/smart_frame_engine/services.yaml` — Service definitions & UI selectors
 - `custom_components/smart_frame_engine/strings.json` — Base UI & error strings (must stay identical to `translations/en.json`)
 - `custom_components/smart_frame_engine/switch.py` — Family Mode toggle
 - `custom_components/smart_frame_engine/translations/en.json` & `fr.json` — Complete English & French translations
-- `blueprints/automation/smart_frame_engine/` — Ready-to-use YAML blueprints (weather/presence context, title cards)
+- `blueprints/automation/smart_frame_engine/` — Ready-to-use YAML blueprints (weather/presence context, title cards, album covers, movie/series posters). They only call this integration's services, are validated by `tests/test_blueprints.py` (loaded with HA's blueprint models and run as real automations), and are **not installed by HACS** (users import them by URL; keep the README import links in step)
 - `tests/` — `pytest` + `pytest-homeassistant-custom-component`
 - `hacs.json` — HACS metadata
 - `pyproject.toml` — `ruff`, `mypy`, `pytest` configuration

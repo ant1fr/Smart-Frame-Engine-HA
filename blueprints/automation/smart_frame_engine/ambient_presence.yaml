@@ -1,0 +1,82 @@
+blueprint:
+  name: Smart Frame Engine - Tell the frame who is home
+  description: >-
+    Keeps the list of people who are home in the ambient context of Smart Frame Engine, so the
+    engine can favour their photos.
+
+
+    The people are sent by name (their `person` entity's name), so the names must match the
+    people known to Immich. When nobody is home the list is emptied, which clears it in the
+    engine. It is updated when someone arrives or leaves, when Home Assistant starts, and every
+    30 minutes. Each update expires on its own after the lifetime below.
+  domain: automation
+  source_url: https://github.com/ant1fr/Smart-Frame-Engine-HA/blob/main/blueprints/automation/smart_frame_engine/ambient_presence.yaml
+  author: ant1fr
+  homeassistant:
+    min_version: 2026.1.0
+  input:
+    persons:
+      name: People
+      description: The people to follow (up to 20 can be at home at the same time).
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: person
+    ttl_minutes:
+      name: Lifetime
+      description: >-
+        How long the engine keeps the list without an update, in minutes. It is renewed every 30
+        minutes, so keep this above 30.
+      default: 180
+      selector:
+        number:
+          min: 1
+          max: 10080
+          mode: box
+          unit_of_measurement: min
+    engine:
+      name: Smart Frame Engine
+      description: Only needed when you have several engines. Leave empty otherwise.
+      default: ""
+      selector:
+        config_entry:
+          integration: smart_frame_engine
+
+mode: restart
+max_exceeded: silent
+
+variables:
+  persons: !input persons
+  ttl_minutes: !input ttl_minutes
+  engine: !input engine
+  # The engine takes at most 20 names of at most 80 characters.
+  home_names: >-
+    {% set ns = namespace(names=[]) %}
+    {% for person in persons if is_state(person, 'home') %}
+      {% set ns.names = ns.names + [(state_attr(person, 'friendly_name') or person)[:80]] %}
+    {% endfor %}
+    {{ ns.names[:20] }}
+
+triggers:
+  - trigger: state
+    entity_id: !input persons
+    # Only the state (home, away...): other attributes change for unrelated reasons.
+    to: null
+    id: changed
+  - trigger: homeassistant
+    event: start
+    id: started
+  - trigger: time_pattern
+    minutes: "/30"
+    id: renew
+
+actions:
+  - alias: Tell the engine who is home
+    action: smart_frame_engine.set_ambient_context
+    data: >-
+      {{ dict({
+        'config_entry_id': engine,
+        'presence': home_names,
+        'ttl_minutes': ttl_minutes,
+      }.items() | rejectattr('1', 'in', ['', none]) | list) }}
