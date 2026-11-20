@@ -45,7 +45,9 @@ def test_manifest_key_order_and_values() -> None:
     assert manifest["iot_class"] == "local_polling"
     assert manifest["config_flow"] is True
     assert manifest["codeowners"] == ["@ant1fr"]
-    assert manifest["version"] == "1.0.0"
+    assert re.fullmatch(r"\d+\.\d+\.\d+", manifest["version"])
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert f'version = "{manifest["version"]}"' in pyproject
     assert manifest["zeroconf"] == [{"type": "_smartframe._tcp.local."}]
 
 
